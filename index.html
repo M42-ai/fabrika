@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Döner Fabrika</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+<style>
+*{box-sizing:border-box}
+html{--s:1}
+html,body{margin:0;background:#CFE8FF;color:#0F172A;font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+a{color:inherit}
+:focus-visible{outline:4px solid #1D4ED8;outline-offset:2px}
+.boot{padding:40px;font-size:calc(26px * var(--s));font-weight:700}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 28px 120px;display:flex;flex-direction:column;gap:20px}
+.top{display:flex;align-items:center;gap:16px}
+.back{width:max(44px, calc(64px * var(--s)));height:max(44px, calc(64px * var(--s)));border-radius:18px;border:2px solid #94A3B8;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+h1{margin:0;font-size:calc(40px * var(--s));font-weight:800;line-height:1.1}
+h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
+.sub{font-size:calc(20px * var(--s));font-weight:700;color:#334155;margin-top:2px}
+.lbl{font-size:calc(20px * var(--s));font-weight:700;color:#334155}
+.muted{color:#475569}
+.card{background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.two{display:flex;gap:24px;align-items:flex-start}
+.side{width:calc(340px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.btn{border:none;border-radius:22px;min-height:max(44px, calc(80px * var(--s)));padding:0 24px;font-size:calc(27px * var(--s));font-weight:800;color:#fff;background:#1D4ED8;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;text-align:center}
+.btn.teal{background:#0F766E}.btn.orange{background:#C2410C}.btn.purple{background:#6D28D9}
+.btn.ghost{background:#fff;color:#0F172A;border:3px solid #334155}
+.btn.small{min-height:max(44px, calc(60px * var(--s)));font-size:calc(21px * var(--s));border-radius:16px;padding:0 16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.code{height:max(44px, calc(92px * var(--s)));border-radius:20px;border:3px solid #CBD5E1;background:#fff;font-size:calc(38px * var(--s));font-weight:800}
+.code.on{background:#1D4ED8;border-color:#1D4ED8;color:#fff}
+.keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.key{height:max(44px, calc(76px * var(--s)));border-radius:18px;border:1px solid #94A3B8;background:#fff;font-size:calc(38px * var(--s));font-weight:700}
+.key.del{background:#FEE2E2;color:#991B1B;font-size:calc(28px * var(--s))}
+.disp{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;min-height:max(44px, calc(112px * var(--s)));padding:0 26px;border-radius:22px;background:#fff;border:3px solid #1D4ED8}
+.disp b{font-size:calc(78px * var(--s));font-weight:800;letter-spacing:-1px;line-height:calc(108px * var(--s))}
+.disp span{font-size:calc(34px * var(--s));font-weight:700;color:#475569}
+.parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.part{background:#fff;border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
+.part small{font-size:calc(19px * var(--s));font-weight:700;color:#475569}
+.part b{font-size:calc(36px * var(--s));font-weight:800}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:18px;padding:14px 18px;border:2px solid transparent}
+.pick{width:100%;text-align:left;font-size:calc(22px * var(--s));font-weight:700;min-height:max(44px, calc(72px * var(--s)))}
+.pick.on{background:#6D28D9;color:#fff;border-color:#6D28D9}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:calc(66px * var(--s));height:max(44px, calc(46px * var(--s)));padding:0 10px;border-radius:12px;background:#EDE9FE;color:#5B21B6;font-size:calc(23px * var(--s));font-weight:800;flex:none}
+.pick.on .badge{background:#fff}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:12px;background:#FFEDD5;color:#9A3412;font-size:calc(20px * var(--s));font-weight:800;border:2px solid #C2410C}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{min-width:calc(120px * var(--s));height:max(44px, calc(84px * var(--s)));border-radius:18px;border:3px solid #0E7490;background:#ECFEFF;color:#0F172A;font-size:calc(30px * var(--s));font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0 12px}
+.chip small{font-size:calc(15px * var(--s));font-weight:700;color:#475569}
+.modalbg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal{background:#fff;border-radius:28px;padding:26px;width:min(640px,100%);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;padding:18px 26px;border-radius:18px;font-size:calc(22px * var(--s));font-weight:700;z-index:30;max-width:92vw;text-align:center}
+.banner{background:#FFF7ED;border:2px solid #C2410C;color:#7C2D12;border-radius:16px;padding:14px 18px;font-size:calc(19px * var(--s));font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;min-height:max(44px, calc(200px * var(--s)));padding:22px 24px;border-radius:26px;color:#fff;border:none;text-align:left;font-size:calc(36px * var(--s));font-weight:800;line-height:1.1}
+.tile.wide{grid-column:span 2}
+.tile small{font-size:calc(21px * var(--s));font-weight:700;display:block;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:#fff;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:4px;border:none;text-align:left}
+.stat small{font-size:calc(19px * var(--s));font-weight:700;color:#475569}
+.stat b{font-size:calc(31px * var(--s));font-weight:800}
+.tbl{background:#fff;border-radius:22px;overflow:hidden;border:2px solid #94A3B8}
+.tr{display:grid;grid-template-columns:minmax(0,1.25fr) repeat(4,minmax(0,1fr));align-items:center;padding:12px 20px;gap:8px;border-top:1px solid #E2E8F0}
+.tr.head{background:#0F172A;color:#fff;font-size:calc(20px * var(--s));font-weight:700;border-top:none;min-height:max(44px, calc(60px * var(--s)))}
+.tr.foot{background:#ECFEFF;border-top:3px solid #0E7490}
+.tr .c{font-size:calc(38px * var(--s));font-weight:800}
+.tr .n{text-align:right;font-size:calc(34px * var(--s));font-weight:700}
+.tr .n.k{color:#1E3A8A;font-weight:800;font-size:calc(38px * var(--s))}
+.pcs{font-size:calc(16px * var(--s));font-weight:700;color:#475569;display:block}
+.tr .pcs{font-size:calc(17px * var(--s));font-weight:700;color:#475569;display:block}
+input.big{height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px solid #94A3B8;background:#F8FAFC;padding:0 16px;font-size:calc(28px * var(--s));font-weight:700;width:100%;min-width:0}
+.ratio{display:grid;grid-template-columns:calc(120px * var(--s)) max(44px, calc(72px * var(--s))) minmax(0,1fr) max(44px, calc(72px * var(--s)));align-items:center;gap:10px}
+.ratio label{font-size:calc(27px * var(--s));font-weight:800}
+.step{height:max(44px, calc(72px * var(--s)));border-radius:18px;border:2px solid #94A3B8;background:#F1F5F9;font-size:calc(38px * var(--s));font-weight:700}
+.pct{display:flex;align-items:center;justify-content:center;height:max(44px, calc(72px * var(--s)));border-radius:18px;border:2px solid #94A3B8;background:#fff}
+.pct span{font-size:calc(30px * var(--s));font-weight:800;color:#475569}
+.pct input{width:calc(100px * var(--s));border:none;background:transparent;text-align:center;font-size:calc(36px * var(--s));font-weight:800}
+.mv{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:12px 16px}
+.mv b{font-size:calc(21px * var(--s));font-weight:700;display:block}
+.mv small{font-size:calc(16px * var(--s));font-weight:600;color:#475569}
+.amt{font-size:calc(24px * var(--s));font-weight:800;white-space:nowrap}
+.plus{color:#C2410C}.minus{color:#1D4ED8}
+.thumb{display:block;width:calc(84px * var(--s));height:max(44px, calc(84px * var(--s)));border-radius:14px;overflow:hidden;border:2px solid #94A3B8;padding:0;background:#fff;flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tile{position:relative}
+.tile.full{grid-column:1/-1;min-height:calc(130px * var(--s));flex-direction:row;align-items:center;justify-content:flex-start;gap:20px}
+.lk{position:absolute;top:calc(14px * var(--s));right:calc(14px * var(--s));opacity:.9}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fin{display:flex;align-items:center;gap:8px}
+.unit{font-size:calc(21px * var(--s));font-weight:700;color:#475569;white-space:nowrap}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tr3,.tr4,.tr5,.tr6{display:grid;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid #E2E8F0;font-size:calc(22px * var(--s));font-weight:700}
+.tr3{grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));padding:8px 0}
+.tr4{grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr))}
+.tr5{grid-template-columns:minmax(0,1.2fr) repeat(4,minmax(0,1fr))}
+.tr6{grid-template-columns:minmax(0,.8fr) repeat(5,minmax(0,1fr))}
+.tr3>span:not(:first-child),.tr4>span:not(:first-child),.tr5>span:not(:first-child),.tr6>span:not(:first-child){text-align:right}
+.tr3.head,.tr4.head,.tr5.head,.tr6.head{font-size:calc(17px * var(--s));color:#475569;border-top:none}
+.tbl .tr4.head,.tbl .tr5.head,.tbl .tr6.head{background:#0F172A;color:#fff}
+.tr4.strong{background:#ECFEFF;font-weight:800;font-size:calc(25px * var(--s))}
+.tabs{display:flex;gap:6px;background:#fff;border-radius:18px;padding:6px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 10px rgba(15,23,42,.14)}
+.tab{flex:1;min-width:0;min-height:max(44px, calc(60px * var(--s)));border:none;border-radius:13px;background:transparent;font-size:calc(21px * var(--s));font-weight:800;color:#334155;padding:0 6px;line-height:1.1}
+.tab.on{background:#0F172A;color:#fff}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.g2 .btn{padding:0 8px;line-height:1.1}
+.tiles .tile{min-height:calc(250px * var(--s))}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.code{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.code small{font-size:calc(16px * var(--s));font-weight:700;opacity:.85}
+.stepper{display:grid;grid-template-columns:max(44px, calc(88px * var(--s))) minmax(0,1fr) max(44px, calc(88px * var(--s)));gap:10px;align-items:stretch}
+.stepper b{display:flex;align-items:center;justify-content:center;font-size:calc(52px * var(--s));font-weight:800;background:#fff;border-radius:18px;border:2px solid #94A3B8;min-height:max(44px, calc(80px * var(--s)))}
+.stepper .step{height:auto}
+button.stat{cursor:pointer}
+.del-x{border:none;background:#FEE2E2;color:#991B1B;border-radius:12px;height:max(44px, calc(44px * var(--s)));padding:0 12px;font-size:calc(18px * var(--s));font-weight:800}
+@media (max-width:760px){
+.wrap{padding:16px 14px 120px}
+.two{flex-direction:column;align-items:stretch}
+.side{width:auto}
+.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tile.wide{grid-column:span 2}
+.tile.tslm{grid-column:auto}
+.grid2{grid-template-columns:1fr}
+.uretim .side{display:contents}
+.uretim .codes-blk{order:1}
+.uretim .main{order:2}
+.uretim .today-blk{order:3}
+.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.fgrid{grid-template-columns:1fr}
+.tr4,.tr5,.tr6{padding:8px 8px;font-size:calc(19px * var(--s));gap:4px}
+.tr3{font-size:calc(20px * var(--s))}
+.tr{padding:10px 10px}
+.tr .c{font-size:calc(30px * var(--s))}.tr .n{font-size:calc(26px * var(--s))}.tr .n.k{font-size:calc(28px * var(--s))}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="boot">Yükleniyor…</div></div>
+<script type="module">
+import { html, render, useState, useEffect } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+// ---------- Supabase bağlantısı (proje kurulunca doldurulur) ----------
+const SUPABASE_URL = 'https://grddpazhhsxlawephlqp.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Uk8IpkVHiix65SLkvAIBMg_JUQXRJH1';
+// ?deneme ile açılınca: giriş yok, gerçek veritabanına hiç bağlanılmaz, örnek verilerle çalışır.
+const DENEME = /(^|[?&])deneme(=|&|$)/.test(location.search.slice(1));
+const sb = !DENEME && SUPABASE_URL.startsWith('https://') ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } }) : null;
+
+// LOGIC-START
+const pad = n => String(n).padStart(2, '0');
+const isoOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const shiftDay = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return isoOf(new Date(y, m - 1, d + n)); };
+const r1 = n => Math.round(n * 10) / 10;
+const r2 = n => Math.round(n * 100) / 100;
+
+// Teslim günündeki kilo fiyatı: başlangıç tarihi o güne kadar olan en son fiyat.
+function priceOn(c, iso) {
+  if (!c || !Array.isArray(c.prices)) return null;
+  let p = null;
+  [...c.prices].sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0)).forEach(x => { if (x.from <= iso) p = x.price; });
+  return p;
+}
+function latestPrice(c) {
+  if (!c || !Array.isArray(c.prices) || !c.prices.length) return null;
+  return [...c.prices].sort((a, b) => (a.from < b.from ? -1 : 1))[c.prices.length - 1];
+}
+// Fiyat kaydı: değişmediyse aynen, aynı gün değiştiyse o günün kaydını düzelt, yoksa yeni kayıt ekle.
+function nextPrices(prices, newPrice, day) {
+  const list = Array.isArray(prices) ? [...prices].sort((a, b) => (a.from < b.from ? -1 : 1)) : [];
+  const last = list[list.length - 1];
+  if (last && last.price === newPrice) return list;
+  if (last && last.from === day) { list[list.length - 1] = { price: newPrice, from: day }; return list; }
+  list.push({ price: newPrice, from: day });
+  return list;
+}
+function balanceOf(moves, code) {
+  let b = 0;
+  Object.values(moves).forEach(m => { if (m.code === code) b += m.kind === 'mal' ? m.amount : m.kind === 'duzeltme' ? m.amount : -m.amount; }); // düzeltme işaretli tutulur
+  return r2(b);
+}
+// Teslimde hesaba yazılacak tutar: HEDEF müşterinin teslim günündeki fiyatı × dönerin kilosu.
+function deliveryCharge(doner, customers, day) {
+  const target = customers[doner.target];
+  const price = priceOn(target, day);
+  if (price == null) return { error: doner.target + ' için kilo fiyatı yok' };
+  const w = doner.actualKg != null ? doner.actualKg : doner.kg;
+  return { price, kg: w, amount: r2(w * price) };
+}
+function donerOran(d, customers) { return d.oran || customers[d.owner] || null; }
+function numOfCode(code) { return parseInt(String(code).replace(/^B/, ''), 10) || 0; }
+// Üretim listesi: o gün üretilen dönerler, şube başına tek satır, şubenin kendi oranıyla.
+function productionRows(doners, customers, day) {
+  const groups = {};
+  Object.values(doners).forEach(d => { if (d.made === day && d.source !== 'direkt') (groups[d.owner] = groups[d.owner] || []).push(d); });
+  const rows = Object.keys(groups).sort((a, b) => numOfCode(a) - numOfCode(b)).map(code => {
+    const list = groups[code].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    const total = r1(list.reduce((s, d) => s + d.kg, 0));
+    let g = 0, b = 0, hasDeri = false;
+    list.forEach(d => { const o = donerOran(d, customers); if (!o) return; g += d.kg * o.gogus / 100; b += d.kg * o.but / 100; if (o.deri) hasDeri = true; });
+    const gogus = r1(g), but = r1(b);
+    const deri = hasDeri ? r1(total - gogus - but) : 0; // kalan deriye: satır toplamı döner kg'a tam eşit olur
+    return { code, pieces: list.map(d => d.kg), total, gogus, but, deri };
+  });
+  const tot = rows.reduce((t, r) => ({ total: r1(t.total + r.total), gogus: r1(t.gogus + r.gogus), but: r1(t.but + r.but), deri: r1(t.deri + r.deri) }), { total: 0, gogus: 0, but: 0, deri: 0 });
+  return { rows, tot };
+}
+// --- Fabrika hesapları (Excel PANEL/GÜN mantığı) ---
+const DEFAULTS = {
+  tavukFiyat: 80, kdv: 0.01, kanatOran: 0.10, gogusPay: 0.55, butPay: 0.45, gogusEt: 0.85, butEt: 0.68,
+  kanatSatis: 0, kemikSatis: 0, deriMaliyet: 0,
+  ucParcalama: 3, ucGogus: 5, ucBut: 5, ucKanat: 2, iscilikMaliyete: true,
+  tolerans: 0.5, fireEsik: 0.03, siparisTol: 0.5,
+  kgKanat: null, kgGogus: null, // kanatlı kemikli göğüs standardı (girilmedi)
+  marineArtis: 0.155, partiGogus: 1209, partiBut: 791, partiDeri: 160,
+  tarif: [
+    { ad: 'Su', kg: 250, fiyat: 0 }, { ad: 'Ayçiçek yağı', kg: 60, fiyat: 90 }, { ad: 'Yoğurt', kg: 80, fiyat: 45 },
+    { ad: 'Tuz', kg: 30, fiyat: 8 }, { ad: 'Kırmızı toz biber', kg: 25, fiyat: 200 }, { ad: 'Karabiber', kg: 10, fiyat: 400 },
+    { ad: 'Kimyon', kg: 12, fiyat: 250 }, { ad: 'Kekik', kg: 10, fiyat: 300 }, { ad: 'Hazır baharat karışımı', kg: 15, fiyat: 985 }
+  ],
+  giderler: [
+    { ad: 'Kira', tutar: 80000 }, { ad: 'Personel maaşları', tutar: 150000 }, { ad: 'Elektrik', tutar: 45000 },
+    { ad: 'Su', tutar: 8000 }, { ad: 'Doğalgaz', tutar: 20000 }, { ad: 'Nakliye / yakıt', tutar: 30000 }, { ad: 'Muhasebe / ofis', tutar: 16000 }
+  ],
+  aylikUretim: 21450
+};
+// Ayarlar tarihli saklanır: o gün geçerli olan, başlangıcı o güne kadar olan en son kayıttır.
+function settingsOn(settingsDocs, day) {
+  let best = null;
+  Object.values(settingsDocs || {}).forEach(x => { if (x && x.from && x.from <= day && (!best || x.from > best.from)) best = x; });
+  return best ? { ...DEFAULTS, ...best } : { ...DEFAULTS, from: null };
+}
+const sumBy = (arr, f) => (arr || []).reduce((s, x) => s + (Number(f(x)) || 0), 0);
+function costModel(s, kemiksizGercek) {
+  const k = s.kanatOran;
+  const gEt = (1 - k) * s.gogusPay * s.gogusEt, bEt = (1 - k) * s.butPay * s.butEt;
+  const verim = gEt + bEt, kemik = 1 - k - verim;
+  const iscilikTavuk = s.ucParcalama + k * s.ucKanat + gEt * s.ucGogus + bEt * s.ucBut;
+  const iscilikEt = verim > 0 ? iscilikTavuk / verim : 0;
+  const kemiksizStd = verim > 0 ? (s.tavukFiyat * (1 + s.kdv) + (s.iscilikMaliyete ? iscilikTavuk : 0) - k * s.kanatSatis - kemik * s.kemikSatis) / verim : 0;
+  const kemiksiz = kemiksizGercek != null ? kemiksizGercek : kemiksizStd;
+  const karisimKg = sumBy(s.tarif, x => x.kg), karisimTL = sumBy(s.tarif, x => x.kg * x.fiyat);
+  const partiEt = s.partiGogus + s.partiBut;
+  const karisimOran = partiEt > 0 ? karisimKg / partiEt : 0;
+  const marineKg = partiEt * (1 + s.marineArtis);
+  const marineMaliyet = marineKg > 0 ? (partiEt * kemiksiz + karisimTL) / marineKg : 0;
+  const sabit = sumBy(s.giderler, x => x.tutar);
+  const kgSabit = s.aylikUretim > 0 ? sabit / s.aylikUretim : 0;
+  const ortDoner = marineKg + s.partiDeri > 0 ? (partiEt * kemiksiz + karisimTL + s.partiDeri * s.deriMaliyet) / (marineKg + s.partiDeri) + kgSabit : 0;
+  return { verim, kemik, gEt, bEt, iscilikTavuk, iscilikEt, kemiksiz, karisimKg, karisimTL, karisimOran, partiEt, marineKg, marineMaliyet, sabit, kgSabit, ortDoner };
+}
+// Müşteri kg maliyeti = (göğüs% + but%) × marine et ₺/kg + deri% × deri ₺/kg + kg başı sabit gider
+function customerKgCost(c, m, s) {
+  if (!c) return 0;
+  return ((c.gogus + c.but) / 100) * m.marineMaliyet + (c.deri / 100) * s.deriMaliyet + m.kgSabit;
+}
+// Kemiksizleştirme: standarda göre fark (fire) ve işçi ödemesi
+function kesimCalc(e, s) {
+  const t = Number(e.tavuk) || 0, k = s.kanatOran;
+  const std = { kanat: t * k, gogus: t * (1 - k) * s.gogusPay * s.gogusEt, but: t * (1 - k) * s.butPay * s.butEt };
+  const cik = { kanat: Number(e.kanat) || 0, gogus: Number(e.gogus) || 0, but: Number(e.but) || 0 };
+  const fab = e.fabrika || {};
+  const fark = {}, oran = {};
+  ['kanat', 'gogus', 'but'].forEach(p => { fark[p] = cik[p] - std[p]; oran[p] = std[p] > 0 ? fark[p] / std[p] : 0; });
+  const odeme = Math.max(0, cik.kanat - (Number(fab.kanat) || 0)) * s.ucKanat + Math.max(0, cik.gogus - (Number(fab.gogus) || 0)) * s.ucGogus
+    + Math.max(0, cik.but - (Number(fab.but) || 0)) * s.ucBut + Math.max(0, t - (Number(fab.parcalama) || 0)) * s.ucParcalama;
+  const etStd = std.gogus + std.but, et = cik.gogus + cik.but;
+  const etOran = etStd > 0 ? (et - etStd) / etStd : 0;
+  const durum = !(t > 0) ? '' : etOran < -s.fireEsik ? 'fazla' : etOran > s.fireEsik ? 'yuksek' : 'normal';
+  return { std, cik, fark, oran, odeme: r2(odeme), et, etStd, etFark: et - etStd, etOran, durum };
+}
+// Marinasyon: giren çiğ → çıkan marine, harcanacak karışım ve malzeme dağılımı
+function marineCalc(e, s, m) {
+  const g = Number(e.gogus) || 0, b = Number(e.but) || 0, d = Number(e.deri) || 0;
+  const artis = e.artis != null ? e.artis : s.marineArtis;
+  const et = g + b;
+  return {
+    cGogus: g * (1 + artis), cBut: b * (1 + artis), deri: d, toplam: (g + b) * (1 + artis) + d,
+    karisim: et * m.karisimOran,
+    malzeme: (s.tarif || []).map(x => ({ ad: x.ad, kg: m.partiEt > 0 ? x.kg * et / m.partiEt : 0 }))
+  };
+}
+// Dönerde kullanılan marine et: o gün üretilen dönerler × müşterinin oranı
+function usedOn(doners, customers, day) {
+  const u = { gogus: 0, but: 0, deri: 0, kg: 0, adet: 0 };
+  Object.values(doners || {}).forEach(d => {
+    if (d.made !== day || d.source === 'direkt') return;
+    const c = donerOran(d, customers); u.kg += d.kg; u.adet += 1;
+    if (!c) return;
+    u.gogus += d.kg * c.gogus / 100; u.but += d.kg * c.but / 100; u.deri += d.kg * c.deri / 100;
+  });
+  return u;
+}
+// Gün sonu terazisi serisi: devir + marine − kullanılan = olması gereken; sayım varsa ertesi güne sayım devreder.
+function teraziSeries(data, toDay) {
+  const { doners, customers, marine, sayim, settings } = data;
+  const dates = [];
+  Object.values(marine || {}).forEach(x => x.date && dates.push(x.date));
+  Object.values(sayim || {}).forEach(x => x.date && dates.push(x.date));
+  let start = dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : toDay;
+  if (start > toDay) start = toDay;
+  const acs = Object.values(sayim || {}).filter(x => x.acilis && x.date <= toDay).map(x => x.date).sort();
+  if (acs.length && acs[acs.length - 1] > start) start = acs[acs.length - 1]; // açılış devri sıfır noktasıdır
+  const lim = shiftDay(toDay, -400); if (start < lim) start = lim;
+  const byDay = {};
+  Object.values(marine || {}).forEach(x => { (byDay[x.date] = byDay[x.date] || []).push(x); });
+  const sy = {}; Object.values(sayim || {}).forEach(x => { sy[x.date] = x; });
+  const dByDay = {};
+  Object.values(doners || {}).forEach(x => { if (x.made && x.made >= start && x.made <= toDay) (dByDay[x.made] = dByDay[x.made] || []).push(x); });
+  const rows = {};
+  let kalan = { gogus: 0, but: 0, deri: 0 };
+  for (let d = start; d <= toDay; d = shiftDay(d, 1)) {
+    const s = settingsOn(settings, d);
+    const plus = { gogus: 0, but: 0, deri: 0 };
+    (byDay[d] || []).forEach(x => { const a = x.artis != null ? x.artis : s.marineArtis; plus.gogus += (x.gogus || 0) * (1 + a); plus.but += (x.but || 0) * (1 + a); plus.deri += x.deri || 0; });
+    const used = usedOn(dByDay[d] || [], customers, d);
+    const devir = { ...kalan };
+    const mevcut = { gogus: devir.gogus + plus.gogus, but: devir.but + plus.but, deri: devir.deri + plus.deri };
+    const hesap = { gogus: mevcut.gogus - used.gogus, but: mevcut.but - used.but, deri: mevcut.deri - used.deri };
+    const say = sy[d] ? { gogus: sy[d].gogus || 0, but: sy[d].but || 0, deri: sy[d].deri || 0 } : null;
+    const tot = o => o.gogus + o.but + o.deri;
+    const acilis = !!(sy[d] && sy[d].acilis);
+    const fark = say && !acilis ? tot(say) - tot(hesap) : null;
+    const durum = acilis ? 'acilis' : !say ? 'sayimYok' : Math.abs(fark) <= s.tolerans ? 'denk' : fark < 0 ? 'eksik' : 'fazla';
+    rows[d] = { devir, plus, mevcut, used, hesap, say, fark, durum, acilis, kalan: say || hesap };
+    kalan = say || hesap;
+  }
+  return rows;
+}
+// --- Mal türleri, iş partisi, gerçek maliyet, sipariş ---
+const MAL = [
+  { id: 'butun', ad: 'Bütün tavuk', is: true },
+  { id: 'kanatliGogus', ad: 'Kanatlı kemikli göğüs', is: true },
+  { id: 'kemikliGogus', ad: 'Kemikli göğüs', is: true },
+  { id: 'kemiksizGogus', ad: 'Kemiksiz göğüs', is: false },
+  { id: 'kemikliBut', ad: 'Kemikli but', is: true },
+  { id: 'kemiksizBut', ad: 'Kemiksiz but', is: false }
+];
+const malAd = id => (MAL.find(m => m.id === id) || { ad: id }).ad;
+// 1 kg maldan standart olarak çıkması gereken kanat / göğüs eti / but eti (null: standart girilmemiş)
+function malStd(tur, s) {
+  const k = s.kanatOran;
+  if (tur === 'butun') return { kanat: k, gogus: (1 - k) * s.gogusPay * s.gogusEt, but: (1 - k) * s.butPay * s.butEt };
+  if (tur === 'kanatliGogus') return s.kgKanat != null && s.kgGogus != null ? { kanat: s.kgKanat, gogus: s.kgGogus, but: 0 } : null;
+  if (tur === 'kemikliGogus') return { kanat: 0, gogus: s.gogusEt, but: 0 };
+  if (tur === 'kemiksizGogus') return { kanat: 0, gogus: 1, but: 0 };
+  if (tur === 'kemikliBut') return { kanat: 0, gogus: 0, but: s.butEt };
+  if (tur === 'kemiksizBut') return { kanat: 0, gogus: 0, but: 1 };
+  return null;
+}
+// Tutarı kişilere kuruşu kuruşuna eşit böl (artan kuruşlar ilk kişilere)
+function esitBol(tutar, isimler) {
+  const n = isimler.length, out = {};
+  if (!n) return out;
+  const c = Math.round(tutar * 100), base = Math.floor(c / n), rem = c - base * n;
+  isimler.forEach((ad, i) => { out[ad] = (base + (i < rem ? 1 : 0)) / 100; });
+  return out;
+}
+// İş partisi: fire (standarda göre) ve ödeme. Ücretler: parçalama = bütün tavuk kg, kanat = çıkan kanat kg, sıyırma = çıkan et kg.
+function partiCalc(p, s) {
+  const gir = (p.girdiler || []).map(g => ({ tur: g.tur, kg: Number(g.kg) || 0 })).filter(g => g.kg > 0);
+  const c = p.cikan || {};
+  const cik = { kanat: Number(c.kanat) || 0, gogus: Number(c.gogus) || 0, but: Number(c.but) || 0 };
+  const std = { kanat: 0, gogus: 0, but: 0 };
+  let stdOk = gir.length > 0, girKg = 0, butunKg = 0;
+  gir.forEach(g => {
+    girKg += g.kg; if (g.tur === 'butun') butunKg += g.kg;
+    const st = malStd(g.tur, s);
+    if (!st) { stdOk = false; return; }
+    std.kanat += g.kg * st.kanat; std.gogus += g.kg * st.gogus; std.but += g.kg * st.but;
+  });
+  const odemeHesap = r2(butunKg * s.ucParcalama + cik.kanat * s.ucKanat + cik.gogus * s.ucGogus + cik.but * s.ucBut);
+  const isciler = (p.isciler || []).filter(Boolean);
+  const elle = !!(p.paylar && isciler.length && isciler.every(n => p.paylar[n] != null));
+  const paylar = elle ? Object.fromEntries(isciler.map(n => [n, Number(p.paylar[n]) || 0])) : esitBol(odemeHesap, isciler);
+  const odeme = isciler.length ? r2(isciler.reduce((a, n) => a + paylar[n], 0)) : odemeHesap;
+  const et = cik.gogus + cik.but, etStd = std.gogus + std.but;
+  const etOran = stdOk && etStd > 0 ? (et - etStd) / etStd : null;
+  const durum = etOran == null ? 'stdYok' : etOran < -s.fireEsik ? 'fazla' : etOran > s.fireEsik ? 'yuksek' : 'normal';
+  const fark = { kanat: cik.kanat - std.kanat, gogus: cik.gogus - std.gogus, but: cik.but - std.but };
+  return { gir, girKg, butunKg, cik, std, stdOk, fark, odemeHesap, odeme, paylar, elle, isciler, et, etStd, etFark: et - etStd, etOran, durum, kemik: Math.max(0, girKg - cik.kanat - et) };
+}
+// Tarihe göre gruplama (aynı nesne için bir kez hesaplanır)
+const _grp = new WeakMap();
+function byDate(obj) {
+  if (!obj) return {};
+  let g = _grp.get(obj);
+  if (!g) { g = {}; Object.entries(obj).forEach(([id, x]) => { if (x && x.date) (g[x.date] = g[x.date] || []).push({ id, ...x }); }); _grp.set(obj, g); }
+  return g;
+}
+// O günün iş partileri (eski "tek işçi" kayıtları da parti olarak sayılır)
+function partiListOn(data, day) {
+  const s = settingsOn(data.settings, day);
+  const out = (byDate(data.parti)[day] || []).map(p => ({ ...p, calc: partiCalc(p, s) }));
+  (byDate(data.kesim)[day] || []).forEach(k => {
+    const p = { id: k.id, date: day, ts: k.ts, eski: true, girdiler: [{ tur: 'butun', kg: k.tavuk }], cikan: { kanat: k.kanat, gogus: k.gogus, but: k.but }, isciler: [k.isci || 'İşçi'], paylar: { [k.isci || 'İşçi']: kesimCalc(k, s).odeme } };
+    out.push({ ...p, calc: partiCalc(p, s) });
+  });
+  return out.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+}
+// Bir mal türünün fiyatı: o günkü alımların ağırlıklı ortalaması; o gün alım yoksa o türün en son alım günü
+function malPrice(mal, tur, day) {
+  const g = byDate(mal);
+  let best = null;
+  Object.keys(g).forEach(d => { if (d <= day && (!best || d > best) && g[d].some(x => x.tur === tur && x.kg > 0)) best = d; });
+  if (!best) return null;
+  let kg = 0, tl = 0;
+  g[best].forEach(x => { if (x.tur === tur && x.kg > 0) { kg += x.kg; tl += x.kg * (Number(x.fiyat) || 0); } });
+  return kg > 0 ? tl / kg : null;
+}
+// O günün gerçek kemiksiz et maliyeti (₺/kg): işlenen malın alış fiyatı + KDV + işçilik − kanat/kemik geliri, çıkan ete bölünür.
+// Kemiksiz gelen mal işçiliksiz olarak aynı ortalamaya girer.
+function etCostOn(data, day) {
+  const s = settingsOn(data.settings, day);
+  let tl = 0, et = 0, eksik = false;
+  partiListOn(data, day).forEach(p => {
+    p.calc.gir.forEach(g => {
+      let f = malPrice(data.mal, g.tur, day);
+      if (f == null) { if (g.tur === 'butun') f = s.tavukFiyat; else { eksik = true; f = 0; } }
+      tl += g.kg * f * (1 + s.kdv);
+    });
+    if (s.iscilikMaliyete) tl += p.calc.odeme;
+    tl -= p.calc.cik.kanat * s.kanatSatis + p.calc.kemik * s.kemikSatis;
+    et += p.calc.et;
+  });
+  (byDate(data.mal)[day] || []).forEach(x => {
+    if ((x.tur === 'kemiksizGogus' || x.tur === 'kemiksizBut') && x.kg > 0) { tl += x.kg * (Number(x.fiyat) || 0) * (1 + s.kdv); et += x.kg; }
+  });
+  return et > 0 && !eksik ? { kemiksiz: tl / et, et, tl } : null;
+}
+// O gün için kullanılacak kemiksiz et maliyeti: o günün gerçeği → son 30 günde en yakın gerçek → Oranlar panelindeki standart
+function kemiksizFor(data, day, maxBack) {
+  const n = maxBack == null ? 30 : maxBack;
+  for (let i = 0, d = day; i <= n; i++, d = shiftDay(d, -1)) {
+    const c = etCostOn(data, d);
+    if (c) return { val: c.kemiksiz, date: d, src: i === 0 ? 'gercek' : 'onceki' };
+  }
+  return { val: costModel(settingsOn(data.settings, day)).kemiksiz, date: null, src: 'standart' };
+}
+// Sipariş listesi satırları (ustaya giden): kod, adet × hedef kg, toplam, müşteri oranıyla göğüs/but/deri
+function siparisRows(sip, customers) {
+  const by = {};
+  ((sip && sip.items) || []).forEach(it => {
+    const a = Math.round(Number(it.adet) || 0), k = Number(it.kg) || 0;
+    if (!it.code || a <= 0 || k <= 0) return;
+    const o = by[it.code] = by[it.code] || { code: it.code, adet: 0, total: 0, lines: [] };
+    o.adet += a; o.total += a * k; o.lines.push({ adet: a, kg: k });
+  });
+  const rows = Object.values(by).sort((a, b) => numOfCode(a.code) - numOfCode(b.code)).map(o => {
+    const c = customers[o.code]; const total = r1(o.total);
+    const gogus = c ? r1(total * c.gogus / 100) : 0, but = c ? r1(total * c.but / 100) : 0;
+    const deri = c && c.deri ? r1(total - gogus - but) : 0;
+    return { ...o, total, gogus, but, deri };
+  });
+  const tot = rows.reduce((t, r) => ({ adet: t.adet + r.adet, total: r1(t.total + r.total), gogus: r1(t.gogus + r.gogus), but: r1(t.but + r.but), deri: r1(t.deri + r.deri) }), { adet: 0, total: 0, gogus: 0, but: 0, deri: 0 });
+  return { rows, tot };
+}
+// Sipariş ↔ yapılan döner karşılaştırması. tol: döner başına kabul edilen kg farkı.
+function siparisDurum(sip, doners, customers, day, tol) {
+  const ord = {}; siparisRows(sip, customers).rows.forEach(r => { ord[r.code] = r; });
+  const made = {};
+  Object.values(doners || {}).forEach(d => {
+    if (d.made !== day || d.source === 'direkt') return;
+    const m = made[d.owner] = made[d.owner] || { adet: 0, kg: 0, pieces: [] };
+    m.adet += 1; m.kg += d.kg; m.pieces.push({ kg: d.kg, ts: d.ts || 0 });
+  });
+  const hasOrder = Object.keys(ord).length > 0;
+  const codes = [...new Set([...Object.keys(ord), ...Object.keys(made)])].sort((a, b) => numOfCode(a) - numOfCode(b));
+  const ozet = { yapilmadi: 0, eksik: 0, fazla: 0, tam: 0, siparissiz: 0 };
+  const rows = codes.map(code => {
+    const o = ord[code] || null, m = made[code] || { adet: 0, kg: 0, pieces: [] };
+    const pieces = m.pieces.sort((a, b) => a.ts - b.ts).map(x => x.kg);
+    let durum, adetFark, kgFark;
+    if (!o) { durum = 'siparissiz'; adetFark = m.adet; kgFark = r1(m.kg); }
+    else {
+      adetFark = m.adet - o.adet; kgFark = r1(m.kg - o.total);
+      if (m.adet === 0) durum = 'yapilmadi';
+      else if (adetFark < 0) durum = 'eksik';
+      else if (adetFark > 0) durum = 'fazla';
+      else durum = Math.abs(kgFark) <= o.adet * tol + 1e-9 ? 'tam' : kgFark < 0 ? 'eksik' : 'fazla';
+    }
+    ozet[durum] += 1;
+    return { code, sip: o, adet: m.adet, kg: r1(m.kg), pieces, durum, adetFark, kgFark };
+  });
+  return { hasOrder, rows, ozet };
+}
+function siparisOzetText(d) {
+  if (!d.hasOrder) return d.rows.length ? 'Sipariş girilmedi' : 'Sipariş yok';
+  const o = d.ozet, p = [];
+  if (o.yapilmadi) p.push(o.yapilmadi + ' yapılmadı');
+  if (o.eksik) p.push(o.eksik + ' eksik');
+  if (o.fazla) p.push(o.fazla + ' fazla');
+  if (o.siparissiz) p.push(o.siparissiz + ' siparişsiz');
+  return p.length ? p.join(', ') : 'Hepsi tam ✓';
+}
+// --- Döner döner usta listesi, yapılmayan dönerler, tedarikçi ---
+function siparisPieces(sip, customers) {
+  const out = [];
+  siparisRows(sip, customers).rows.forEach(r => r.lines.forEach(l => {
+    const c = customers[r.code];
+    const gogus = c ? r1(l.kg * c.gogus / 100) : 0, but = c ? r1(l.kg * c.but / 100) : 0, deri = c && c.deri ? r1(l.kg - gogus - but) : 0;
+    for (let i = 0; i < l.adet; i++) out.push({ code: r.code, kg: l.kg, gogus, but, deri, oran: c ? { gogus: c.gogus, but: c.but, deri: c.deri } : null });
+  }));
+  return out;
+}
+// Siparişte olup stoğa girmemiş dönerler: yapılan her döner, kilosu en yakın sipariş dönerini kapatır; kalanlar eksiktir.
+function eksikDonerler(sip, doners, customers, day) {
+  const kapali = (sip && sip.kapali) || {};
+  const ord = {}; siparisPieces(sip, customers).forEach(p => { if (!kapali[p.code]) (ord[p.code] = ord[p.code] || []).push(p.kg); });
+  Object.values(doners || {}).forEach(d => {
+    if (d.made !== day || d.source === 'direkt') return;
+    const l = ord[d.owner]; if (!l || !l.length) return;
+    let bi = 0; l.forEach((k, i) => { if (Math.abs(k - d.kg) < Math.abs(l[bi] - d.kg)) bi = i; });
+    l.splice(bi, 1);
+  });
+  const out = [];
+  Object.keys(ord).sort((a, b) => numOfCode(a) - numOfCode(b)).forEach(code => ord[code].forEach(k => out.push({ code, kg: k })));
+  return out;
+}
+// Önceki günlerden açık kalan (yapılmamış) dönerler
+function acikDonerler(siparis, doners, customers, today, n) {
+  const out = [];
+  for (let i = 1; i <= (n || 7); i++) {
+    const d = shiftDay(today, -i); if (!siparis || !siparis[d]) continue;
+    const items = eksikDonerler(siparis[d], doners, customers, d);
+    if (items.length) out.push({ day: d, geri: i, items });
+  }
+  return out;
+}
+// Tedarikçi kayıtlarının özeti (tur: deri | iscilik | malzeme | odeme)
+function tedarikOzet(list) {
+  const o = { deriKg: 0, deriTL: 0, iscilikKg: 0, iscilikTL: 0, malzemeTL: 0, alim: 0, odeme: 0 };
+  (list || []).forEach(x => {
+    const t = Number(x.tutar) || 0, m = Number(x.miktar) || 0;
+    if (x.tur === 'odeme') { o.odeme += t; return; }
+    if (x.tur === 'deri') { o.deriKg += m; o.deriTL += t; } else if (x.tur === 'iscilik') { o.iscilikKg += m; o.iscilikTL += t; } else o.malzemeTL += t;
+    o.alim += t;
+  });
+  Object.keys(o).forEach(k => { o[k] = r2(o[k]); });
+  o.bakiye = r2(o.alim - o.odeme);
+  return o;
+}
+// LOGIC-END
+
+const nf1 = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 });
+const kg = n => nf1.format(n);
+const nf3 = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const kgA = n => (r1(n) === n ? nf1.format(n) : nf3.format(n));
+const nfTL = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const tl = n => (Number.isInteger(n) ? nf2.format(n) : nfTL.format(n)) + ' ₺';
+const today = () => isoOf(new Date());
+const fd = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return d + '.' + m + '.' + y; };
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const numOf = v => {
+  if (v == null || v === '') return 0;
+  let t = String(v).replace(/\s|₺|%/g, '');
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); // 80.000 = seksen bin
+  const n = parseFloat(t);
+  return isFinite(n) ? n : 0;
+};
+
+// ---------- Ekrana göre boyut ----------
+const UI = { mult: 1, auto: 1, w: 0, h: 0 };
+try { const v = parseFloat(localStorage.getItem('dfYazi')); if (v >= 0.8 && v <= 1.4) UI.mult = v; } catch (e) {}
+function autoScale() {
+  const w = window.innerWidth || 904, h = window.innerHeight || 968;
+  // Tasarım Fold 6 iç ekranına (≈904 px genişlik) göre yapıldı: orada 1. Dar telefonda küçülür, tablette biraz büyür.
+  const sw = w <= 904 ? 0.72 + Math.max(0, w - 360) * (0.28 / 544) : Math.min(1.12, 1 + (w - 904) * (0.12 / 376));
+  const sh = Math.max(0.7, Math.min(1.12, h / 900)); // yatay telefonda yüksekliğe göre de küçült
+  return Math.max(0.68, Math.min(sw, sh));
+}
+function applyScale() {
+  UI.auto = autoScale(); UI.w = window.innerWidth; UI.h = window.innerHeight;
+  document.documentElement.style.setProperty('--s', (UI.auto * UI.mult).toFixed(3));
+  if (typeof emit === 'function') emit();
+}
+function setMult(v) { UI.mult = v; try { localStorage.setItem('dfYazi', String(v)); } catch (e) {} applyScale(); }
+addEventListener('resize', applyScale);
+addEventListener('orientationchange', applyScale);
+
+// ---------- Veri katmanı ----------
+const S = { mode: 'loading', db: null, assets: null, customers: {}, doners: {}, moves: {}, settings: {}, kesim: {}, mal: {}, parti: {}, siparis: {}, tedarik: {}, marine: {}, sayim: {}, config: {}, loaded: {}, note: '', toast: '' };
+const COLS = ['customers', 'doners', 'moves', 'settings', 'kesim', 'mal', 'parti', 'siparis', 'tedarik', 'marine', 'sayim', 'config'];
+const subs = new Set();
+const emit = () => subs.forEach(f => f());
+function useStore() { const [, set] = useState(0); useEffect(() => { const f = () => set(x => x + 1); subs.add(f); f(); return () => subs.delete(f); }, []); return S; }
+let toastTimer;
+function toast(m) { S.toast = m; emit(); clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = ''; emit(); }, 3800); }
+
+const norm = (col, v) => (col === 'doners' && v && v.status === 'donmada' ? { ...v, status: 'stok' } : v);
+async function put(col, id, data) {
+  if (S.mode === 'live') {
+    const { error } = await sb.from('docs').upsert({ col, id, data, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  }
+  S[col] = { ...S[col], [id]: norm(col, data) }; emit();
+}
+async function removeDoc(col, id) {
+  if (S.mode === 'live') {
+    const { error } = await sb.from('docs').delete().eq('col', col).eq('id', id);
+    if (error) throw error;
+  }
+  const o = { ...S[col] }; delete o[id]; S[col] = o; emit();
+}
+async function safe(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); return true; }
+  catch (e) {
+    const c = e && (e.code || e.status);
+    toast(c === '42501' || c === 401 || c === 403 ? 'Kaydedilemedi: bu hesabın yetkisi yok.' : !navigator.onLine ? 'İnternet yok, kaydedilemedi. Bağlanınca tekrar dene.' : 'Kaydedilemedi, tekrar dene.');
+    return false;
+  }
+}
+
+function sampleDocs() {
+  const t = today(), y = shiftDay(t, -1), y2 = shiftDay(t, -2), old = shiftDay(t, -38), now = Date.now();
+  const cust = (num, name, deri, gogus, but, prices) => ({ num, name, deri, gogus, but, prices, sample: true });
+  const customers = {
+    B1: cust(1, 'Köşe Döner', 10, 60, 30, [{ price: 150, from: old }, { price: 165, from: t }]),
+    B2: cust(2, 'Lezzet Büfe', 15, 50, 35, [{ price: 155, from: old }]),
+    B3: cust(3, 'Saray Kebap', 10, 70, 20, [{ price: 150, from: old }]),
+    B4: cust(4, 'Usta Dürüm', 20, 40, 40, [{ price: 160, from: old }]),
+    B5: cust(5, 'Yıldız Büfe', 12, 55, 33, [{ price: 150, from: old }]),
+    B6: cust(6, 'Merkez Döner', 15, 45, 40, [{ price: 155, from: old }]),
+    B12: cust(12, 'Liman Büfe', 15, 50, 35, [{ price: 170, from: old }])
+  };
+  const dn = (owner, kgv, made, status, extra, i) => ({ owner, kg: kgv, made, status, ts: now - 100000 + i * 1000, sample: true, ...extra });
+  const doners = {
+    s01: dn('B1', 40, y2, 'yolda', { target: 'B1', sentAt: t, stockedAt: t }, 1), s02: dn('B1', 40, y2, 'stok', { stockedAt: t }, 2),
+    s03: dn('B2', 30, y2, 'yolda', { target: 'B12', sentAt: t, stockedAt: t }, 3), s04: dn('B2', 30, y2, 'stok', { stockedAt: t }, 4),
+    s05: dn('B3', 45, y2, 'stok', { stockedAt: t }, 5), s06: dn('B3', 45, y2, 'stok', { stockedAt: t }, 6), s07: dn('B4', 40, y2, 'stok', { stockedAt: t }, 7),
+    s08: dn('B5', 35, y2, 'stok', { stockedAt: t }, 8), s09: dn('B6', 40, y2, 'stok', { stockedAt: t }, 9),
+    f01: dn('B1', 40, y, 'stok', {}, 12), f02: dn('B3', 45, y, 'stok', {}, 13),
+    d01: dn('B1', 40, t, 'stok', {}, 20), d02: dn('B1', 40, t, 'stok', {}, 21), d03: dn('B2', 30, t, 'stok', {}, 22), d04: dn('B2', 30, t, 'stok', {}, 23),
+    d05: dn('B4', 40, t, 'stok', {}, 24), d06: dn('B5', 35, t, 'stok', {}, 25), d07: dn('B6', 42, t, 'stok', {}, 26), d08: dn('B12', 30, t, 'stok', {}, 27),
+    y01: dn('B1', 45, shiftDay(t, -3), 'teslim', { target: 'B1', sentAt: y, deliveredAt: y, price: 150, amount: 6750, moveId: 'm01' }, -10),
+    y02: dn('B3', 60, shiftDay(t, -3), 'teslim', { target: 'B3', sentAt: y, deliveredAt: y, price: 150, amount: 9000, moveId: 'm02' }, -9),
+    y03: dn('B12', 30, shiftDay(t, -3), 'teslim', { target: 'B12', sentAt: y, deliveredAt: y, price: 170, amount: 5100, moveId: 'm03' }, -8),
+    y04: dn('B5', 25, shiftDay(t, -3), 'kaldirildi', { reason: 'Fire / bozuk', note: '', removedAt: y }, -7)
+  };
+  const mv = (code, kind, extra, i) => ({ code, kind, date: y, ts: now - 200000 + i * 1000, sample: true, ...extra });
+  const moves = {
+    m01: mv('B1', 'mal', { kg: 45, price: 150, amount: 6750, from: 'B1', donerId: 'y01' }, 1),
+    m02: mv('B3', 'mal', { kg: 60, price: 150, amount: 9000, from: 'B3', donerId: 'y02' }, 2),
+    m03: mv('B12', 'mal', { kg: 30, price: 170, amount: 5100, from: 'B12', donerId: 'y03' }, 3),
+    m04: mv('B1', 'odeme', { amount: 5000, payType: 'Nakit' }, 4),
+    m05: mv('B12', 'odeme', { amount: 3000, payType: 'Havale / EFT' }, 5)
+  };
+  const ml = (date, saat, tur, kgv, fiyat, i) => ({ date, saat, tur, kg: kgv, fiyat, ts: now - 70000 + i * 1000, sample: true });
+  const mal = { g1: ml(y, '07:40', 'butun', 500, 80, 1), g2: ml(t, '07:30', 'butun', 500, 80, 2), g3: ml(t, '11:15', 'kemikliBut', 120, 95, 3), g4: ml(t, '13:00', 'kemiksizGogus', 60, 185, 4) };
+  const pt = (date, girdiler, cikan, isciler, i) => ({ date, girdiler, cikan, isciler, ts: now - 50000 + i * 1000, sample: true });
+  const parti = {
+    p1: pt(y, [{ tur: 'butun', kg: 500 }], { kanat: 50, gogus: 211, but: 139 }, ['Ali'], 1),
+    p2: pt(t, [{ tur: 'butun', kg: 500 }], { kanat: 50, gogus: 208, but: 137 }, ['Ali', 'Veli', 'Can'], 2),
+    p3: pt(t, [{ tur: 'kemikliBut', kg: 120 }], { kanat: 0, gogus: 0, but: 80 }, ['Veli'], 3)
+  };
+  const siparis = { [t]: { date: t, ts: now - 45000, sample: true, items: [{ code: 'B1', adet: 2, kg: 40 }, { code: 'B2', adet: 2, kg: 30 }, { code: 'B3', adet: 1, kg: 45 }, { code: 'B4', adet: 1, kg: 40 }, { code: 'B5', adet: 1, kg: 35 }, { code: 'B6', adet: 1, kg: 40 }, { code: 'B12', adet: 1, kg: 30 }] } };
+  const marine = { r1: { date: y, gogus: 211, but: 139, deri: 18, artis: 0.155, ts: now - 40000, sample: true }, r2: { date: t, gogus: 268, but: 217, deri: 26, artis: 0.155, ts: now - 30000, sample: true } };
+  const sayim = { [y2]: { date: y2, gogus: 900, but: 520, deri: 90, ts: now - 60000, acilis: true, sample: true } };
+  const td = (tur, extra, i) => ({ date: t, firma: 'Nur Döner', tur, ts: now - 20000 + i * 1000, sample: true, ...extra });
+  const tedarik = { t1: td('deri', { miktar: 60, fiyat: 0, tutar: 0 }, 1), t2: td('iscilik', { miktar: 287, fiyat: 12, tutar: 3444 }, 2), t3: td('malzeme', { ad: 'Döner şişi', miktar: 10, fiyat: 45, tutar: 450 }, 3) };
+  siparis[y] = { date: y, ts: now - 90000, sample: true, items: [{ code: 'B1', adet: 1, kg: 40 }, { code: 'B3', adet: 1, kg: 45 }, { code: 'B5', adet: 1, kg: 35 }] };
+  return { customers, doners, moves, mal, parti, siparis, tedarik, marine, sayim };
+}
+const dbEmpty = () => ['customers', 'doners', 'moves', 'kesim', 'mal', 'parti', 'siparis', 'tedarik', 'marine', 'sayim'].every(c => !Object.keys(S[c]).length);
+async function loadSample() {
+  if (!dbEmpty()) { toast('Örnek veriler sadece boş uygulamaya yüklenebilir.'); return; }
+  const s = sampleDocs();
+  if (S.mode !== 'live') { Object.keys(s).forEach(k => { S[k] = s[k]; }); emit(); return; }
+  toast('Örnek veriler yükleniyor…');
+  for (const col of Object.keys(s)) {
+    for (const [id, data] of Object.entries(s[col])) { const ok = await safe(() => put(col, id, data)); if (!ok) return; }
+  }
+  toast('Örnek veriler yüklendi');
+}
+async function clearSample() {
+  for (const col of ['moves', 'doners', 'kesim', 'mal', 'parti', 'siparis', 'tedarik', 'marine', 'sayim', 'customers']) {
+    for (const [id, d] of Object.entries(S[col])) { if (d.sample) { const ok = await safe(() => removeDoc(col, id)); if (!ok) return; } }
+  }
+  toast('Örnek veriler silindi');
+}
+
+async function loadAll() {
+  const fresh = {}; COLS.forEach(c => { fresh[c] = {}; });
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('docs').select('col,id,data').range(from, from + 999);
+    if (error) throw error;
+    data.forEach(r => { if (fresh[r.col]) fresh[r.col][r.id] = norm(r.col, r.data); });
+    if (data.length < 1000) break;
+  }
+  COLS.forEach(c => { S[c] = fresh[c]; });
+  S.loaded = Object.fromEntries(COLS.map(c => [c, true]));
+}
+let channel = null;
+async function startLive() {
+  S.mode = 'live'; S.note = ''; emit();
+  if (!channel) {
+    channel = sb.channel('docs-degisiklik').on('postgres_changes', { event: '*', schema: 'public', table: 'docs' }, p => {
+      if (p.eventType === 'DELETE') { const o = p.old || {}; if (S[o.col] && o.id in S[o.col]) { const n = { ...S[o.col] }; delete n[o.id]; S[o.col] = n; emit(); } }
+      else { const r = p.new; if (r && S[r.col]) { S[r.col] = { ...S[r.col], [r.id]: norm(r.col, r.data) }; emit(); } }
+    }).subscribe();
+  }
+  try { await loadAll(); } catch (e) { S.note = 'Veriler alınamadı. İnternet bağlantını kontrol et.'; }
+  emit();
+}
+async function init() {
+  if (!sb) {
+    S.mode = 'demo'; const s = sampleDocs(); Object.keys(s).forEach(k => { S[k] = s[k]; });
+    if (DENEME) { document.title = 'Döner Fabrika · Deneme'; try { const salt = genId(); S.config = { ...S.config, pin: { salt, hash: await hashPin('1234', salt) } }; } catch (e) {} }
+    emit(); return;
+  }
+  const { data } = await sb.auth.getSession();
+  if (data && data.session) await startLive(); else { S.mode = 'login'; emit(); }
+  sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_OUT') { S.mode = 'login'; emit(); } });
+  // Telefon uykudan uyanınca (veya internet geri gelince) verileri tazele
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.mode === 'live') loadAll().then(emit).catch(() => {}); });
+  addEventListener('online', () => { if (S.mode === 'live') loadAll().then(emit).catch(() => {}); });
+}
+async function logout() { try { await sb.auth.signOut(); } catch (e) {} UI.unlockedAt = 0; COLS.forEach(c => { S[c] = {}; }); S.loaded = {}; S.mode = 'login'; emit(); }
+
+function Login() {
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const submit = async e => {
+    e.preventDefault(); if (busy) return; setBusy(true); setErr('');
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: pw });
+    if (error) { setErr(error.message === 'Invalid login credentials' ? 'E-posta ya da şifre yanlış.' : 'Giriş yapılamadı: ' + error.message); setBusy(false); return; }
+    setPw(''); await startLive(); setBusy(false);
+  };
+  return html`<div class="wrap" style="max-width:560px">
+    <h1 style="font-size:calc(48px * var(--s))">Fabrika</h1>
+    <form class="card" onSubmit=${submit}>
+      <h2>Giriş</h2>
+      <label class="fld"><span class="lbl">E-posta</span><input class="big" type="email" autocomplete="username" value=${email} onInput=${e => setEmail(e.target.value)} required/></label>
+      <label class="fld"><span class="lbl">Şifre</span><input class="big" type="password" autocomplete="current-password" value=${pw} onInput=${e => setPw(e.target.value)} required/></label>
+      ${err ? html`<div class="lbl" style="color:#9A3412">${err}</div>` : ''}
+      <button type="submit" class="btn" disabled=${busy}>${busy ? 'Giriş yapılıyor…' : 'GİRİŞ YAP'}</button>
+    </form>
+    <a class="btn ghost" href="?deneme">Giriş yapmadan dene</a></div>`;
+}
+
+const custList = () => Object.entries(S.customers).map(([id, c]) => ({ id, ...c })).sort((a, b) => a.num - b.num);
+const donerList = () => Object.entries(S.doners).map(([id, d]) => ({ id, ...d }));
+const nameOf = code => (S.customers[code] ? S.customers[code].name : '');
+
+// ---------- Parçalar ----------
+const IBack = html`<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`;
+const ico = d => html`<svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" dangerouslySetInnerHTML=${{ __html: d }}></svg>`;
+
+const GROUPS = [
+  { title: 'Üretim', tabs: [['siparis', 'Sipariş'], ['uretim', 'Üretim Gir'], ['kontrol', 'Kontrol']] },
+  { title: 'Stok ve teslimat', tabs: [['stok', 'Döner Stok'], ['teslimat', 'Teslimat']] },
+  { title: 'Et', tabs: [['mal', 'Mal & İşçi'], ['marine', 'Marinasyon'], ['sayim', 'Terazi']] },
+  { title: 'Müşteriler', tabs: [['defter', 'Defter'], ['musteriler', 'Kod · Oran · Fiyat'], ['tedarik', 'Tedarikçi']] },
+  { title: 'Hesap', tabs: [['maliyet', 'Maliyet & Kâr'], ['rapor', 'Rapor'], ['oranlar', 'Oranlar']] }
+];
+function Top({ title, sub, go, right, tabs = true }) {
+  const g = tabs ? GROUPS.find(x => x.tabs.some(t => t[0] === UI.view)) : null;
+  return html`<div class="top">
+    <button type="button" class="back" aria-label="Ana ekrana dön" onClick=${() => go('ana')}>${IBack}</button>
+    <div style="flex:1;min-width:0"><h1>${title}</h1>${sub ? html`<div class="sub">${sub}</div>` : ''}</div>
+    ${right || ''}
+  </div>
+  ${g ? html`<div class="tabs" role="tablist" aria-label=${g.title}>${g.tabs.map(([v, l]) => html`<button type="button" role="tab" aria-selected=${v === UI.view} class=${'tab' + (v === UI.view ? ' on' : '')} onClick=${() => go(v)}>${l}</button>`)}</div>` : ''}`;
+}
+function Keypad({ value, set, comma, thousand, dec }) {
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', comma ? ',' : thousand ? '000' : '', '0', 'sil'];
+  const press = k => {
+    let v = value;
+    if (k === 'sil') v = v.slice(0, -1);
+    else if (k === ',') { if (!v.includes(',')) v = (v || '0') + ','; }
+    else if (k === '000') { if (v && v.length <= 4) v = v + '000'; }
+    else {
+      if (v.replace(',', '').length >= 7) return;
+      if (comma && v.includes(',') && v.split(',')[1].length >= (dec || 1)) return;
+      if (v === '0') v = '';
+      v = v + k;
+    }
+    set(v);
+  };
+  return html`<div class="keys">${keys.map(k => k === '' ? html`<span></span>` : html`
+    <button type="button" class=${'key' + (k === 'sil' ? ' del' : '')} aria-label=${k === 'sil' ? 'Son rakamı sil' : k === ',' ? 'Virgül' : k} onClick=${() => press(k)}>${k === 'sil' ? 'Sil' : k}</button>`)}</div>`;
+}
+
+function Modal({ children, close }) {
+  return html`<div class="modalbg" onClick=${e => { if (e.target === e.currentTarget) close(); }}><div class="modal" role="dialog" aria-modal="true">${children}</div></div>`;
+}
+
+// ---------- Ana ekran ----------
+const DATA = () => ({ mal: S.mal, parti: S.parti, kesim: S.kesim, settings: S.settings, doners: S.doners, customers: S.customers, marine: S.marine, sayim: S.sayim, siparis: S.siparis });
+function Ana({ go }) {
+  const [settings, setSettings] = useState(false);
+  const [confirmSample, setConfirmSample] = useState(false);
+  const t = today(); const ds = donerList();
+  const prodKg = r1(ds.filter(d => d.made === t && d.source !== 'direkt').reduce((s, d) => s + d.kg, 0));
+  const tahsil = r2(Object.values(S.moves).filter(m => m.kind === 'odeme' && m.date === t).reduce((s, m) => s + m.amount, 0));
+  const alacak = r2(custList().reduce((s, c) => s + balanceOf(S.moves, c.id), 0));
+  const yolda = ds.filter(d => d.status === 'yolda');
+  const stokKg = r1(ds.filter(d => d.status === 'stok').reduce((s, d) => s + d.kg, 0));
+  const empty = !Object.keys(S.customers).length;
+  const open = isUnlocked();
+  const lk = open ? '' : html`<span class="lk">${ILock}</span>`;
+  const sd = siparisDurum(S.siparis[t], S.doners, S.customers, t, settingsFor(t).siparisTol);
+  const acikN = acikDonerler(S.siparis, S.doners, S.customers, t, 7).reduce((a, x) => a + x.items.length, 0);
+  const sipBad = acikN > 0 || (sd.hasOrder && (sd.ozet.yapilmadi + sd.ozet.eksik + sd.ozet.fazla + sd.ozet.siparissiz) > 0);
+  const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  const hasSample = COLS.some(c => Object.values(S[c]).some(d => d.sample));
+  return html`<div class="wrap">
+    <div class="top" style="justify-content:space-between;align-items:flex-end">
+      <h1 style="font-size:calc(48px * var(--s))">Fabrika</h1>
+      <div class="sub" style="font-size:calc(23px * var(--s))">${fd(t)} · ${days[new Date().getDay()]}</div>
+    </div>
+    ${empty ? html`<div class="card">
+      <h2>Henüz kayıt yok</h2>
+      <div class="lbl">İlk müşteriyi ekleyerek başla ya da örnek verilerle uygulamayı dene. Örnek veriler sonra tek tuşla silinir.</div>
+      <div class="grid2">
+        <button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşteri ekle</button>
+        <button type="button" class="btn ghost" onClick=${loadSample}>Örnek verilerle dene</button>
+      </div></div>` : ''}
+    <div class="stats">
+      <div class="stat"><small>Bugün üretim</small><b>${kg(prodKg)} kg</b></div>
+      <button type="button" class="stat" style=${sipBad ? 'background:#FFF7ED;outline:3px solid #C2410C' : ''} onClick=${() => go('kontrol')}><small>Sipariş kontrolü</small><b style=${'font-size:calc(24px * var(--s));color:' + (sipBad ? '#9A3412' : '#0F172A')}>${siparisOzetText(sd)}</b>${acikN ? html`<small style="color:#9A3412;font-weight:800">Önceki günlerden ${acikN} döner stoğa girmedi</small>` : ''}</button>
+      <div class="stat"><small>Stokta döner</small><b>${kg(stokKg)} kg</b></div>
+      <div class="stat"><small>Toplam alacak</small><b style="color:#C2410C">${open ? tl(alacak) : '••••'}</b><small>Bugün tahsilat ${open ? tl(tahsil) : '••••'}</small></div>
+    </div>
+    <div class="tiles">
+      <button type="button" class="tile wide" style="background:#1E3A8A" onClick=${() => go('uretim')}>${ico('<path d="M12 5v14"/><path d="M5 12h14"/>')}<span style="font-size:calc(44px * var(--s))">Üretim<small>Sipariş · Üretim gir · Kontrol</small></span></button>
+      <button type="button" class="tile" style="background:#0F766E" onClick=${() => go('stok')}>${ico('<rect x="1" y="6" width="14" height="10" rx="1"/><path d="M15 9h4l3 3v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>')}<span>Stok & Teslimat<small>${yolda.length ? yolda.length + ' döner teslimat bekliyor' : 'Bekleyen teslimat yok'}</small></span></button>
+      <button type="button" class="tile" style="background:#B45309" onClick=${() => go('mal')}>${lk}${ico('<path d="M8 3h8l-1 5a5 5 0 1 1-6 0z"/><path d="M8 14h8"/>')}<span>Et<small>Mal & işçi · Marinasyon · Terazi</small></span></button>
+      <button type="button" class="tile" style="background:#C2410C" onClick=${() => go('defter')}>${lk}${ico('<path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M8 9h6"/><path d="M8 13h6"/><path d="M18 8h2v12"/>')}<span>Müşteri & Tedarikçi<small>Defter · Fiyat · Nur Döner</small></span></button>
+      <button type="button" class="tile" style="background:#0F172A" onClick=${() => go('maliyet')}>${lk}${ico('<path d="M4 19h16"/><path d="M7 15v-4"/><path d="M12 15V7"/><path d="M17 15v-6"/>')}<span>Hesap<small>Maliyet · Rapor · Oranlar</small></span></button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button type="button" class="btn ghost small" onClick=${() => { setConfirmSample(false); setSettings(true); }}>Ayarlar</button>
+      ${open ? html`<button type="button" class="btn ghost small" onClick=${() => { UI.unlockedAt = 0; emit(); }}>${ILock} Kilitle</button>` : ''}
+    </div>
+    ${settings ? html`<${Modal} close=${() => setSettings(false)}>
+      <h2>Ayarlar</h2>
+      <div class="lbl">Yazı ve tuş boyutu</div>
+      <div class="lbl" style="font-size:calc(17px * var(--s))">Bu ekran ${UI.w} × ${UI.h} · otomatik boyut %${Math.round(UI.auto * 100)}. Telefon açılıp kapanınca (Fold) boyut kendiliğinden değişir.</div>
+      <div class="grid2">${[[0.9, 'Küçük'], [1, 'Otomatik'], [1.12, 'Büyük'], [1.25, 'Çok büyük']].map(([v, l]) => html`<button type="button" class=${'btn small ' + (UI.mult === v ? '' : 'ghost')} aria-pressed=${UI.mult === v} onClick=${() => setMult(v)}>${l}</button>`)}</div>
+      <div class="lbl">${S.mode === 'live' ? 'Veriler kaydediliyor (çevrim içi).' : 'Deneme modu: veriler kaydedilmiyor.'}</div>
+      ${S.config.pin ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); go('pin'); }}>PIN değiştir</button>` : ''}
+      ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
+      ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
+      ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
+      <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Üretim Gir ----------
+function Uretim({ go }) {
+  const cs = custList();
+  const [sel, setSel] = useState(() => { const k = UI.uretimKod; UI.uretimKod = null; return k && S.customers[k] ? k : (cs[0] ? cs[0].id : null); });
+  const [val, setVal] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [geri, setGeri] = useState(() => { const g = UI.uretimGeri || 0; UI.uretimGeri = 0; return g; });
+  const t = today(); const day = shiftDay(t, -geri);
+  if (!cs.length) return html`<div class="wrap"><${Top} title="Üretim Gir" go=${go}/><div class="card"><h2>Önce müşteri ekle</h2><button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşterilere git</button></div></div>`;
+  const code = S.customers[sel] ? sel : cs[0].id;
+  const c = S.customers[code];
+  const n = numOf(val);
+  const list = donerList().filter(d => d.made === day && d.source !== 'direkt').sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const by = {}; list.forEach(d => { (by[d.owner] = by[d.owner] || []).push(d); });
+  const codesDay = Object.keys(by).sort((a, b) => numOfCode(a) - numOfCode(b));
+  const total = r1(list.reduce((s, d) => s + d.kg, 0));
+  const sd = siparisDurum(S.siparis[day], S.doners, S.customers, day, settingsFor(day).siparisTol);
+  const sipOf = {}; sd.rows.forEach(r => { sipOf[r.code] = r; });
+  const row = sipOf[code];
+  const hint = !sd.hasOrder ? 'Bu gün için sipariş girilmedi.' : row && row.sip ? 'Sipariş: ' + row.sip.lines.map(l => l.adet + ' × ' + kg(l.kg)).join(' + ') + ' kg · yapılan ' + row.adet + ' / ' + row.sip.adet : code + ' için sipariş yok (siparişsiz döner olur).';
+  const save = async () => {
+    if (n <= 0 || busy) return;
+    if (n > 200) { toast('Bir döner 200 kg’dan büyük girilemez.'); return; }
+    setBusy(true);
+    const ok = await safe(() => put('doners', genId(), { owner: code, kg: r1(n), made: day, status: 'stok', oran: { gogus: c.gogus, but: c.but, deri: c.deri }, ts: Date.now() }), code + ' · ' + kg(n) + ' kg döner stoğa eklendi');
+    if (ok) setVal('');
+    setBusy(false);
+  };
+  const del = async d => {
+    if (confirmDel !== d.id) { setConfirmDel(d.id); return; }
+    setConfirmDel(null);
+    const cur = S.doners[d.id];
+    if (!cur || cur.status !== 'stok') { toast('Teslimata çıkmış döner silinemez.'); return; }
+    await safe(() => removeDoc('doners', d.id), 'Yanlış giriş silindi');
+  };
+  const gunAd = ['Bugün', 'Dün', '2 gün önce'];
+  return html`<div class="wrap">
+    <${Top} title="Üretim Gir" sub=${fd(day) + ' · ' + kg(total) + ' kg · ' + siparisOzetText(sd)} go=${go}/>
+    <div style="display:flex;flex-direction:column;gap:6px"><div class="lbl">Döner ne zaman yapıldı?</div>
+    <div class="seg" role="group" aria-label="Döner ne zaman yapıldı">${gunAd.map((l, i) => html`<button type="button" class=${'btn small ' + (geri === i ? '' : 'ghost')} aria-pressed=${geri === i} onClick=${() => setGeri(i)}>${l}</button>`)}${geri > 2 ? html`<button type="button" class="btn small" aria-pressed="true">${fd(day)}</button>` : ''}</div></div>
+    <div class="two uretim">
+      <div class="side">
+        <div class="codes-blk" style="display:flex;flex-direction:column;gap:10px">
+        <div class="lbl">1. Şube kodu</div>
+        <div class="grid3">${cs.map(x => { const r = sipOf[x.id]; return html`<button type="button" class=${'code' + (x.id === code ? ' on' : '')} aria-pressed=${x.id === code} onClick=${() => setSel(x.id)}>${x.id}${r && r.sip ? html`<small>${r.adet}/${r.sip.adet}</small>` : ''}</button>`; })}</div>
+        <div class="lbl" style=${'font-size:calc(18px * var(--s));color:' + (sd.hasOrder && !(row && row.sip) ? '#9A3412' : '#334155')}>${hint}</div>
+        </div>
+        <div class="today-blk" style="display:flex;flex-direction:column;gap:10px">
+        <div class="lbl" style="margin-top:8px">${gunAd[geri] || fd(day)} yapılan dönerler</div>
+        ${codesDay.length ? codesDay.map(k => html`<div class="row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:calc(24px * var(--s));font-weight:800"><span>${k}</span><span style="color:#1E3A8A">${kg(r1(by[k].reduce((s, d) => s + d.kg, 0)))} kg</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">${by[k].map(d => html`<span style="display:inline-flex;align-items:center;gap:6px;background:#F1F5F9;border-radius:12px;padding:4px 4px 4px 12px;font-size:calc(20px * var(--s));font-weight:700">${kg(d.kg)}
+            ${d.status === 'stok' ? html`<button type="button" class="del-x" aria-label=${kg(d.kg) + ' kg dönerin girişini sil'} onClick=${() => del(d)}>${confirmDel === d.id ? 'Emin misin?' : '×'}</button>` : html`<span style="font-size:calc(15px * var(--s));color:#475569;padding-right:8px">${d.status === 'yolda' ? 'teslimatta' : d.status === 'teslim' ? 'teslim' : 'kaldırıldı'}</span>`}</span>`)}</div>
+        </div>`) : html`<div class="row lbl">Henüz giriş yok.</div>`}
+        </div>
+      </div>
+      <div class="main">
+        <div class="lbl">2. ${code} için bir dönerin kilosu</div>
+        <div class="disp"><b>${val || '0'}</b><span>kg</span></div>
+        <div class="parts">
+          <div class="part"><small>Göğüs kg · %${c.gogus}</small><b>${kg(r1(n * c.gogus / 100))}</b></div>
+          <div class="part"><small>But kg · %${c.but}</small><b>${kg(r1(n * c.but / 100))}</b></div>
+          <div class="part"><small>Deri kg · %${c.deri}</small><b>${kg(c.deri ? r1(r1(n) - r1(n * c.gogus / 100) - r1(n * c.but / 100)) : 0)}</b></div>
+        </div>
+        <${Keypad} value=${val} set=${setVal} comma=${true}/>
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(30px * var(--s))" disabled=${busy || n <= 0} onClick=${save}>KAYDET</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------- Sipariş (ustaya giden liste) ----------
+function Siparis({ go }) {
+  const cs = custList();
+  const t = today(); const yarin = shiftDay(t, 1);
+  const [day, setDay] = useState(t);
+  const [sel, setSel] = useState(cs[0] ? cs[0].id : null);
+  const [adet, setAdet] = useState(1);
+  const [val, setVal] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [showText, setShowText] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  if (!cs.length) return html`<div class="wrap"><${Top} title="Sipariş" go=${go}/><div class="card"><h2>Önce müşteri ekle</h2><button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşterilere git</button></div></div>`;
+  const code = S.customers[sel] ? sel : cs[0].id;
+  const doc = S.siparis[day];
+  const items = ((doc && doc.items) || []).slice().sort((a, b) => numOfCode(a.code) - numOfCode(b.code) || a.kg - b.kg);
+  const { rows, tot } = siparisRows(doc, S.customers);
+  const pcs = siparisPieces(doc, S.customers);
+  const tp = pcs.reduce((a, x) => ({ gogus: r1(a.gogus + x.gogus), but: r1(a.but + x.but), deri: r1(a.deri + x.deri) }), { gogus: 0, but: 0, deri: 0 });
+  const n = numOf(val);
+  const saveItems = (its, msg) => (its.length ? safe(() => put('siparis', day, { ...(doc || {}), date: day, items: its, ts: Date.now() }), msg) : safe(() => removeDoc('siparis', day), msg));
+  const add = async () => {
+    if (n <= 0 || busy) return;
+    if (n > 200) { toast('Bir döner 200 kg’dan büyük olamaz.'); return; }
+    setBusy(true);
+    const k = r1(n); const its = items.map(x => ({ ...x })); const ex = its.find(x => x.code === code && x.kg === k);
+    if (ex) ex.adet += adet; else its.push({ code, adet, kg: k });
+    const ok = await saveItems(its, code + ' · ' + adet + ' × ' + kg(k) + ' kg siparişe eklendi');
+    if (ok) { setVal(''); setAdet(1); }
+    setBusy(false);
+  };
+  const delLine = async it => {
+    const key = it.code + '|' + it.kg;
+    if (confirmDel !== key) { setConfirmDel(key); return; }
+    setConfirmDel(null);
+    await saveItems(items.filter(x => !(x.code === it.code && x.kg === it.kg)), 'Satır silindi');
+  };
+  const prevDay = Object.keys(S.siparis).filter(d => d < day && ((S.siparis[d].items || []).length)).sort().pop();
+  const copyPrev = () => saveItems(S.siparis[prevDay].items.map(x => ({ code: x.code, adet: x.adet, kg: x.kg })).filter(x => S.customers[x.code]), fd(prevDay) + ' siparişi kopyalandı');
+  const text = 'SİPARİŞ LİSTESİ ' + fd(day) + '\n(Her satır 1 döner: Şube | Döner kg | Göğüs | But | Deri)\n' +
+    pcs.map(x => x.code + ' | ' + kg(x.kg) + ' kg | Göğüs ' + (x.oran ? '%' + x.oran.gogus + ' ' : '') + kg(x.gogus) + ' | But ' + (x.oran ? '%' + x.oran.but + ' ' : '') + kg(x.but) + ' | Deri ' + (x.oran ? '%' + x.oran.deri + ' ' : '') + kg(x.deri)).join('\n') +
+    '\nTOPLAM | ' + tot.adet + ' döner | ' + kg(tot.total) + ' kg | Göğüs ' + kg(tp.gogus) + ' | But ' + kg(tp.but) + ' | Deri ' + kg(tp.deri) + '\n(Hepsi marine edilmiş et)';
+  const copy = () => {
+    try { navigator.clipboard.writeText(text).then(() => toast('Liste kopyalandı, WhatsApp’a yapıştırabilirsin'), () => setShowText(true)); }
+    catch (e) { setShowText(true); }
+  };
+  const gunAd = day === t ? 'Bugün' : day === yarin ? 'Yarın' : fd(day);
+  return html`<div class="wrap">
+    <${Top} title="Sipariş" sub=${gunAd + ' · ' + fd(day) + ' · ' + tot.adet + ' döner · ' + kg(tot.total) + ' kg'} go=${go} right=${html`<div style="display:flex;gap:8px">
+      <button type="button" class="back" aria-label="Önceki gün" onClick=${() => { setDay(shiftDay(day, -1)); setConfirmDel(null); }}>${IBack}</button>
+      <button type="button" class="back" aria-label="Sonraki gün" disabled=${day >= yarin} onClick=${() => { setDay(shiftDay(day, 1)); setConfirmDel(null); }} style="transform:scaleX(-1)">${IBack}</button></div>`}/>
+    <div class="two uretim">
+      <div class="side">
+        <div class="codes-blk" style="display:flex;flex-direction:column;gap:10px">
+        <div class="lbl">1. Şube kodu</div>
+        <div class="grid3">${cs.map(x => html`<button type="button" class=${'code' + (x.id === code ? ' on' : '')} aria-pressed=${x.id === code} onClick=${() => setSel(x.id)}>${x.id}</button>`)}</div>
+        </div>
+        <div class="today-blk" style="display:flex;flex-direction:column;gap:8px">
+        <div class="lbl" style="margin-top:8px">${gunAd} siparişi</div>
+        ${items.length ? items.map(it => html`<div class="row" style="padding:8px 8px 8px 16px"><span style="font-size:calc(23px * var(--s));font-weight:800">${it.code} · ${it.adet} × ${kg(it.kg)} kg</span>
+          <button type="button" class="del-x" aria-label=${it.code + ' sipariş satırını sil'} onClick=${() => delLine(it)}>${confirmDel === it.code + '|' + it.kg ? 'Emin misin?' : '×'}</button></div>`)
+          : html`<div class="row lbl">Sipariş girilmedi.</div>
+            ${prevDay ? html`<button type="button" class="btn ghost small" onClick=${copyPrev}>${fd(prevDay)} siparişini kopyala</button>` : ''}`}
+        </div>
+      </div>
+      <div class="main">
+        <div class="lbl">2. ${code} için kaç döner?</div>
+        <div class="stepper"><button type="button" class="step" aria-label="Adedi azalt" onClick=${() => setAdet(a => Math.max(1, a - 1))}>−</button><b aria-live="polite">${adet}</b><button type="button" class="step" aria-label="Adedi artır" onClick=${() => setAdet(a => Math.min(50, a + 1))}>+</button></div>
+        <div class="lbl">3. Bir dönerin hedef kilosu</div>
+        <div class="disp"><b>${val || '0'}</b><span>kg</span></div>
+        <${Keypad} value=${val} set=${setVal} comma=${true}/>
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(28px * var(--s))" disabled=${busy || n <= 0} onClick=${add}>SİPARİŞE EKLE</button>
+      </div>
+    </div>
+    <h2 style="margin-top:6px">Usta listesi · ${fd(day)} · her satır 1 döner</h2>
+    ${rows.length ? html`<div class="tbl">
+      <div class="tr head"><span>Şube</span><span style="text-align:right">Döner kg</span><span style="text-align:right">Göğüs kg</span><span style="text-align:right">But kg</span><span style="text-align:right">Deri kg</span></div>
+      ${pcs.map(x => html`<div class="tr"><span class="c">${x.code}<span class="pcs">${x.oran ? 'G %' + x.oran.gogus + ' · B %' + x.oran.but + ' · D %' + x.oran.deri : ''}</span></span>
+        <span class="n k">${kg(x.kg)}</span><span class="n">${kg(x.gogus)}</span><span class="n">${kg(x.but)}</span><span class="n">${kg(x.deri)}</span></div>`)}
+      <div class="tr foot"><span class="c" style="font-size:calc(24px * var(--s));color:#0E7490">TOPLAM<span class="pcs">${tot.adet} döner</span></span><span class="n k">${kg(tot.total)}</span><span class="n" style="font-weight:800">${kg(tp.gogus)}</span><span class="n" style="font-weight:800">${kg(tp.but)}</span><span class="n" style="font-weight:800">${kg(tp.deri)}</span></div>
+    </div>
+    <div class="grid2">
+      <a class="btn teal" href=${'https://wa.me/?text=' + encodeURIComponent(text)} target="_blank" rel="noopener">WhatsApp’ta ustaya gönder</a>
+      <button type="button" class="btn ghost" onClick=${copy}>Metni kopyala</button>
+    </div>
+    ${showText ? html`<div class="card"><div class="lbl">Kopyalama açılmadı. Metni seçip kopyala:</div><textarea readonly style="width:100%;min-height:220px;font-size:18px;font-family:inherit;border-radius:12px;border:2px solid #94A3B8;padding:12px">${text}</textarea></div>` : ''}`
+    : html`<div class="card"><div class="lbl">Sipariş ekleyince ustaya gidecek liste burada oluşur: şube kodu, adet, kilo ve o şubenin oranıyla göğüs, but, deri.</div></div>`}
+  </div>`;
+}
+
+// ---------- Kontrol (sipariş ↔ yapılan) ----------
+function Kontrol({ go }) {
+  const [day, setDay] = useState(today());
+  const st = settingsFor(day);
+  const sd = siparisDurum(S.siparis[day], S.doners, S.customers, day, st.siparisTol);
+  const D = { tam: ['Tam ✓', '#134E4A', '#F0FDFA', '#0F766E'], eksik: ['Eksik', '#9A3412', '#FFF7ED', '#C2410C'], fazla: ['Fazla', '#1E3A8A', '#DBEAFE', '#1D4ED8'], yapilmadi: ['Yapılmadı', '#FFFFFF', '#C2410C', '#C2410C'], siparissiz: ['Siparişsiz döner', '#FFFFFF', '#6D28D9', '#6D28D9'] };
+  const detay = r => r.durum === 'yapilmadi' ? r.sip.adet + ' döner · ' + kg(r.sip.total) + ' kg bekleniyor'
+    : r.durum === 'siparissiz' ? r.adet + ' döner · ' + kg(r.kg) + ' kg siparişte yok'
+    : r.durum === 'eksik' ? (r.adetFark < 0 ? (-r.adetFark) + ' döner eksik · ' + kg(-r.kgFark) + ' kg' : kg(-r.kgFark) + ' kg eksik')
+    : r.durum === 'fazla' ? (r.adetFark > 0 ? r.adetFark + ' döner fazla · +' + kg(r.kgFark) + ' kg' : '+' + kg(r.kgFark) + ' kg fazla')
+    : 'fark ' + sgn(r.kgFark, kg) + ' kg';
+  const sipKg = r1(sd.rows.reduce((a, r) => a + (r.sip ? r.sip.total : 0), 0)), sipAdet = sd.rows.reduce((a, r) => a + (r.sip ? r.sip.adet : 0), 0);
+  const yapKg = r1(sd.rows.reduce((a, r) => a + r.kg, 0)), yapAdet = sd.rows.reduce((a, r) => a + r.adet, 0);
+  const bad = sd.hasOrder && (sd.ozet.yapilmadi + sd.ozet.eksik + sd.ozet.fazla + sd.ozet.siparissiz) > 0;
+  const eksBy = {}; eksikDonerler(S.siparis[day], S.doners, S.customers, day).forEach(x => { (eksBy[x.code] = eksBy[x.code] || []).push(x.kg); });
+  const acik = acikDonerler(S.siparis, S.doners, S.customers, today(), 7);
+  const [confirmKapat, setConfirmKapat] = useState(null);
+  const kapat = async (d, code) => { const key = d + code; if (confirmKapat !== key) { setConfirmKapat(key); return; } setConfirmKapat(null); const doc = S.siparis[d]; await safe(() => put('siparis', d, { ...doc, kapali: { ...(doc.kapali || {}), [code]: true } }), code + ' · ' + fd(d) + ' siparişi kapatıldı'); };
+  return html`<div class="wrap">
+    <${Top} title="Kontrol" sub=${fd(day) + ' · sipariş ile yapılan döner'} go=${go} right=${html`<${DayNav} day=${day} setDay=${setDay}/>`}/>
+    <div class="stats">
+      <div class="stat"><small>Sipariş</small><b>${sipAdet} · ${kg(sipKg)} kg</b></div>
+      <div class="stat"><small>Yapılan</small><b>${yapAdet} · ${kg(yapKg)} kg</b></div>
+      <div class="stat" style="grid-column:span 2"><small>Durum</small><b style=${'color:' + (bad ? '#9A3412' : '#0F766E')}>${siparisOzetText(sd)}</b></div>
+    </div>
+    ${acik.length ? html`<div class="card" style="border:3px solid #C2410C;background:#FFF7ED;gap:10px">
+      <h2 style="color:#9A3412">Stoğa girmemiş dönerler (son 7 gün)</h2>
+      <div class="lbl" style="color:#7C2D12">Siparişi yazıldı ama yapılıp stoğa girilmedi. Yapıldıysa “Üretim gir” ile o güne kaydet; yapılmayacaksa kapat.</div>
+      ${acik.map(a => { const by = {}; a.items.forEach(x => { (by[x.code] = by[x.code] || []).push(x.kg); }); return Object.keys(by).map(code => html`<div class="row" style="flex-wrap:wrap;border-color:#FDBA74">
+        <span style="min-width:0"><b style="font-size:calc(30px * var(--s))">${code}</b> <span style="font-size:calc(21px * var(--s));font-weight:700">${by[code].length} döner · ${by[code].map(kg).join(' + ')} kg</span><small class="pcs">${fd(a.day)} siparişi · ${a.geri === 1 ? 'dün' : a.geri + ' gün önce'}</small></span>
+        <span style="display:flex;gap:8px;margin-left:auto"><button type="button" class="btn small" onClick=${() => { UI.uretimGeri = a.geri; UI.uretimKod = code; go('uretim'); }}>Üretim gir</button>
+        <button type="button" class="btn ghost small" onClick=${() => kapat(a.day, code)}>${confirmKapat === a.day + code ? 'Emin misin?' : 'Yapılmayacak'}</button></span></div>`); })}
+    </div>` : ''}
+    ${!sd.rows.length ? html`<div class="card"><h2>Bu gün için sipariş ve üretim yok</h2><div class="grid2"><button type="button" class="btn" onClick=${() => go('siparis')}>Sipariş gir</button><button type="button" class="btn ghost" onClick=${() => go('uretim')}>Üretim gir</button></div></div>` : ''}
+    ${sd.rows.length && !sd.hasOrder ? html`<div class="banner">Bu gün için sipariş girilmemiş; karşılaştırma yapılamıyor. Yapılan dönerler aşağıda.</div>` : ''}
+    ${sd.rows.map(r => { const d = D[r.durum]; const noOrd = !sd.hasOrder; return html`<div class="row" style=${'flex-wrap:wrap;align-items:flex-start;border-color:' + (noOrd ? 'transparent' : d[3])}>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <span style="font-size:calc(42px * var(--s));font-weight:800;line-height:1">${r.code}</span>
+        <span style="font-size:calc(21px * var(--s));font-weight:700">Sipariş: ${r.sip ? r.sip.lines.map(l => l.adet + ' × ' + kg(l.kg)).join(' + ') + ' = ' + kg(r.sip.total) + ' kg' : 'yok'}</span>
+        <span style="font-size:calc(21px * var(--s));font-weight:700;color:#1E3A8A">Yapılan: ${r.adet ? r.adet + ' döner · ' + kg(r.kg) + ' kg (' + r.pieces.map(kg).join(' + ') + ')' : 'yok'}</span>
+        ${eksBy[r.code] && sd.hasOrder ? html`<span class="tag" style="align-self:flex-start">Stoğa girmedi: ${eksBy[r.code].map(kg).join(' + ')} kg</span>` : ''}
+      </div>
+      ${noOrd ? '' : html`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto">
+        <span class="tag" style=${'font-size:calc(22px * var(--s));color:' + d[1] + ';background:' + d[2] + ';border-color:' + d[3]}>${d[0]}</span>
+        <span style="font-size:calc(19px * var(--s));font-weight:700;color:#334155;text-align:right">${detay(r)}</span>
+      </div>`}</div>`; })}
+    ${sd.hasOrder ? html`<div class="lbl" style="font-size:calc(16px * var(--s))">“Tam”: adet tutuyor ve kilo farkı döner başına ±${kg(st.siparisTol)} kg içinde (Oranlar ekranından ayarlanır). Stoğa direkt eklenen dönerler sayılmaz.</div>` : ''}
+  </div>`;
+}
+
+// ---------- Stok ----------
+function Stok({ go }) {
+  const [m, setM] = useState(null);
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [add, setAdd] = useState(null);
+  const t = today();
+  const ds = donerList();
+  const sortD = (a, b) => (a.made < b.made ? -1 : a.made > b.made ? 1 : (a.ts || 0) - (b.ts || 0));
+  const group = list => { const by = {}; list.forEach(d => { (by[d.owner] = by[d.owner] || []).push(d); }); return [by, Object.keys(by).sort((a, b) => numOfCode(a) - numOfCode(b))]; };
+  const stok = ds.filter(d => d.status === 'stok').sort(sortD);
+  const donmada = ds.filter(d => d.status === 'donmada').sort(sortD);
+  const [by, codes] = group(stok);
+  const [byF, codesF] = group(donmada);
+  const removed = ds.filter(d => d.status === 'kaldirildi').sort((a, b) => (a.removedAt < b.removedAt ? 1 : a.removedAt > b.removedAt ? -1 : (b.ts || 0) - (a.ts || 0))).slice(0, 10);
+  const sumKg = list => r1(list.reduce((s, d) => s + d.kg, 0));
+  const age = made => { const n = Math.round((new Date(t) - new Date(made)) / 86400000); return n <= 0 ? 'bugün yapıldı' : n === 1 ? 'dün yapıldı' : n === 2 ? '2 gün önce yapıldı' : fd(made); };
+  const close = () => { setM(null); setReason(''); setNote(''); };
+  const sendTo = async (d, target) => {
+    if (busy) return; setBusy(true);
+    const cur = S.doners[d.id];
+    if (cur && cur.status === 'stok') await safe(() => put('doners', d.id, { ...cur, status: 'yolda', target, sentAt: t }), target === cur.owner ? cur.owner + ' · ' + kg(cur.kg) + ' kg teslimata çıktı' : cur.owner + ' stoğundaki ' + kg(cur.kg) + ' kg döner ' + target + ' teslimatına eklendi');
+    setBusy(false); close();
+  };
+  const sendAll = async code => {
+    if (busy) return; setBusy(true);
+    for (const d of by[code] || []) { const cur = S.doners[d.id]; if (cur && cur.status === 'stok') { const ok = await safe(() => put('doners', d.id, { ...cur, status: 'yolda', target: code, sentAt: t })); if (!ok) break; } }
+    toast(code + ' dönerlerinin hepsi teslimata çıktı'); setBusy(false);
+  };
+  const toStock = async d => {
+    if (busy) return; setBusy(true);
+    const cur = S.doners[d.id];
+    if (cur && cur.status === 'donmada') await safe(() => put('doners', d.id, { ...cur, status: 'stok', stockedAt: t }), cur.owner + ' · ' + kg(cur.kg) + ' kg stoğa alındı');
+    setBusy(false); close();
+  };
+  const toStockAll = async code => {
+    if (busy) return; setBusy(true);
+    for (const d of byF[code] || []) { const cur = S.doners[d.id]; if (cur && cur.status === 'donmada') { const ok = await safe(() => put('doners', d.id, { ...cur, status: 'stok', stockedAt: t })); if (!ok) break; } }
+    toast(code + ' dönerlerinin hepsi stoğa alındı'); setBusy(false);
+  };
+  const removeIt = async d => {
+    if (busy || !reason || (reason === 'Diğer' && !note.trim())) return; setBusy(true);
+    const cur = S.doners[d.id];
+    if (cur && (cur.status === 'stok' || cur.status === 'donmada')) await safe(() => put('doners', d.id, { ...cur, status: 'kaldirildi', reason, note: note.trim(), removedAt: t }), kg(cur.kg) + ' kg döner kaldırıldı');
+    setBusy(false); close();
+  };
+  const undoRemove = async d => {
+    const cur = S.doners[d.id]; if (!cur || cur.status !== 'kaldirildi') return;
+    const { reason: _r, note: _n, removedAt: _a, ...rest } = cur;
+    await safe(() => put('doners', d.id, { ...rest, status: 'stok', stockedAt: rest.stockedAt || t }), 'Döner stoğa geri alındı');
+  };
+  const addDirect = async () => {
+    const n = numOf(add.val);
+    if (busy || !add.code || n <= 0) return;
+    if (n > 200) { toast('Bir döner 200 kg’dan büyük girilemez.'); return; }
+    setBusy(true);
+    const ok = await safe(() => put('doners', genId(), { owner: add.code, kg: r1(n), made: t, status: 'stok', source: 'direkt', stockedAt: t, ts: Date.now() }), add.code + ' · ' + kg(n) + ' kg direkt stoğa eklendi');
+    if (ok) setAdd(a => ({ ...a, val: '' }));
+    setBusy(false);
+  };
+  const cur = m ? S.doners[m.id] : null;
+  const cs = custList();
+  const section = (title, sub, byX, codesX, frozen) => html`
+    ${title ? html`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px"><h2>${title}</h2><span class="lbl">${sub}</span></div>` : ''}
+    ${codesX.map(code => html`<div class="card" style=${'gap:12px;' + (frozen ? 'background:#F1F5F9;border:2px dashed #64748B' : '')}>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-size:calc(40px * var(--s));font-weight:800">${code}</span><span style=${'font-size:calc(24px * var(--s));font-weight:800;color:' + (frozen ? '#334155' : '#0E7490')}>${kg(sumKg(byX[code]))} kg</span></div>
+        ${frozen ? html`<button type="button" class="btn small" disabled=${busy} onClick=${() => toStockAll(code)}>Hepsini stoğa al</button>`
+          : html`<button type="button" class="btn teal small" disabled=${busy} onClick=${() => sendAll(code)}>Hepsini teslimata çıkar</button>`}
+      </div>
+      <div class="chips">${byX[code].map(d => html`<button type="button" class="chip" style=${frozen ? 'border-color:#64748B;background:#fff' : ''} aria-label=${code + ' ' + kg(d.kg) + ' kg döner, seçenekler'} onClick=${() => setM({ id: d.id, step: 'menu' })}>${kgA(d.actualKg != null ? d.actualKg : d.kg)}<small>${d.source === 'direkt' ? 'direkt eklendi' : age(d.made)}</small></button>`)}</div>
+    </div>`)}`;
+  return html`<div class="wrap">
+    <${Top} title="Döner Stok" sub=${stok.length + ' döner · ' + kg(sumKg(stok)) + ' kg · dönere dokun'} go=${go}/>
+    <button type="button" class="btn" disabled=${!cs.length} onClick=${() => setAdd({ code: cs[0] ? cs[0].id : null, val: '' })}>+ Stoğa direkt döner ekle</button>
+    ${codes.length ? section('', '', by, codes, false) : html`<div class="card"><h2>Stokta döner yok</h2><button type="button" class="btn" onClick=${() => go('uretim')}>Üretim gir</button></div>`}
+    ${removed.length ? html`<div class="lbl" style="margin-top:6px">Kaldırılanlar (son 10)</div>
+      ${removed.map(d => html`<div class="mv"><span><b>${d.owner} · ${kg(d.kg)} kg · ${d.reason}${d.note ? ' (' + d.note + ')' : ''}</b><small>${fd(d.removedAt)}</small></span>
+        <button type="button" class="btn ghost small" onClick=${() => undoRemove(d)}>Stoğa geri al</button></div>`)}` : ''}
+    ${m && cur ? html`<${Modal} close=${close}>
+      <h2>${cur.owner} · ${kg(cur.kg)} kg döner</h2>
+      <div class="lbl">${cur.source === 'direkt' ? 'Direkt stoğa eklendi: ' + fd(cur.made) : 'Üretim: ' + fd(cur.made) + ' · ' + age(cur.made)}</div>
+      ${m.step === 'menu' && cur.status === 'donmada' ? html`
+        <button type="button" class="btn" disabled=${busy} onClick=${() => toStock(m)}>Stoğa al (hazır)</button>
+        <button type="button" class="btn orange" onClick=${() => setM({ ...m, step: 'sebep' })}>Kaldır</button>
+        <button type="button" class="btn ghost" onClick=${close}>Vazgeç</button>` : ''}
+      ${m.step === 'menu' && cur.status === 'stok' ? html`
+        <button type="button" class="btn teal" disabled=${busy} onClick=${() => sendTo(m, cur.owner)}>Teslimata çıkar (${cur.owner})</button>
+        <button type="button" class="btn" onClick=${() => setM({ ...m, step: 'hedef' })}>Başka müşteri için teslimata çıkar</button>
+        <button type="button" class="btn orange" onClick=${() => setM({ ...m, step: 'sebep' })}>Stoktan kaldır</button>
+        <button type="button" class="btn ghost" onClick=${close}>Vazgeç</button>` : ''}
+      ${m.step === 'hedef' ? html`
+        <div class="lbl">Bu döner hangi müşteriye gidecek? Hesap o müşterinin fiyatıyla tutulur.</div>
+        <div class="grid3">${cs.filter(x => x.id !== cur.owner).map(x => html`<button type="button" class="code" disabled=${busy} onClick=${() => sendTo(m, x.id)}>${x.id}</button>`)}</div>
+        <button type="button" class="btn ghost" onClick=${() => setM({ ...m, step: 'menu' })}>Geri</button>` : ''}
+      ${m.step === 'sebep' ? html`
+        <div class="lbl">Neden kaldırılıyor?</div>
+        ${['Fire / bozuk', 'Fabrika satış şubesi', 'Diğer'].map(r => html`<button type="button" class=${'btn ' + (reason === r ? 'orange' : 'ghost')} aria-pressed=${reason === r} onClick=${() => setReason(r)}>${r}</button>`)}
+        ${reason === 'Diğer' ? html`<label class="lbl" for="not">Kısa not</label><input id="not" class="big" value=${note} onInput=${e => setNote(e.target.value)} placeholder="Örn. numune"/>` : ''}
+        <div class="grid2">
+          <button type="button" class="btn ghost" onClick=${() => setM({ ...m, step: 'menu' })}>Geri</button>
+          <button type="button" class="btn orange" disabled=${busy || !reason || (reason === 'Diğer' && !note.trim())} onClick=${() => removeIt(m)}>Kaldır</button>
+        </div>` : ''}
+    <//>` : ''}
+    ${add ? html`<${Modal} close=${() => setAdd(null)}>
+      <h2>Stoğa direkt döner ekle</h2>
+      <div class="lbl">Üretim girmeden stoğa döner ekler (örn. sayımda bulunan). Ustanın üretim listesine yazılmaz.</div>
+      <div class="grid3">${cs.map(x => html`<button type="button" class=${'code' + (x.id === add.code ? ' on' : '')} aria-pressed=${x.id === add.code} onClick=${() => setAdd(a => ({ ...a, code: x.id }))}>${x.id}</button>`)}</div>
+      <div class="disp"><b>${add.val || '0'}</b><span>kg</span></div>
+      <${Keypad} value=${add.val} set=${v => setAdd(a => ({ ...a, val: v }))} comma=${true}/>
+      <div class="grid3">
+        <button type="button" class="btn ghost" onClick=${() => setAdd(null)}>Bitti</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy || numOf(add.val) <= 0} onClick=${addDirect}>STOĞA EKLE</button>
+      </div>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Sabah Teslimat ----------
+const ICam = html`<svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const IFis = html`<svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>`;
+const signed = {};
+const photoSrc = id => {
+  id = String(id);
+  if (id.startsWith('blob:')) return id;
+  if (!id.startsWith('sb:') || !sb) return '';
+  const c = signed[id];
+  if (c && c.exp > Date.now()) return c.url;
+  if (!c || !c.pending) {
+    signed[id] = { pending: true, url: c ? c.url : '', exp: 0 };
+    sb.storage.from('fis').createSignedUrl(id.slice(3), 86400).then(({ data }) => { if (data) { signed[id] = { url: data.signedUrl, exp: Date.now() + 82800000 }; emit(); } else signed[id] = { url: '', exp: Date.now() + 60000 }; });
+  }
+  return c ? c.url : '';
+};
+async function compressImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const sc = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.75));
+    return blob || file;
+  } finally { URL.revokeObjectURL(url); }
+}
+async function dropAsset(id) { if (id && sb && String(id).startsWith('sb:')) { try { await sb.storage.from('fis').remove([String(id).slice(3)]); } catch (e) {} } }
+
+function Teslimat({ go }) {
+  const [busy, setBusy] = useState({});
+  const [confirmUndo, setConfirmUndo] = useState(null);
+  const [tart, setTart] = useState(null);
+  const [ask, setAsk] = useState(null);
+  const [big, setBig] = useState(null);
+  const t = today();
+  const ds = donerList();
+  const sortT = (a, b) => numOfCode(a.target) - numOfCode(b.target) || (a.ts || 0) - (b.ts || 0);
+  const bekleyen = ds.filter(d => d.status === 'yolda').sort(sortT);
+  const verilen = ds.filter(d => d.status === 'teslim' && d.deliveredAt === t).sort(sortT);
+  const mark = (id, v) => setBusy(b => ({ ...b, [id]: v }));
+  const canPhoto = S.mode === 'demo' || S.mode === 'live';
+
+  const openTart = d => { const cur = S.doners[d.id]; if (!cur) return; setTart({ id: d.id, val: cur.actualKg != null ? String(cur.actualKg).replace('.', ',') : '', photoId: cur.photoId || null, newPhoto: null, uploading: false }); };
+  const onPhoto = async e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    setTart(x => ({ ...x, uploading: true }));
+    try {
+      const blob = await compressImage(f);
+      let id;
+      if (S.mode === 'live') {
+        const path = today().slice(0, 7) + '/' + genId() + '.jpg';
+        const { error } = await sb.storage.from('fis').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+        if (error) throw error;
+        id = 'sb:' + path;
+      } else id = URL.createObjectURL(blob);
+      setTart(x => { if (x && x.newPhoto) dropAsset(x.newPhoto); return x ? { ...x, uploading: false, photoId: id, newPhoto: id } : x; });
+    } catch (err) {
+      setTart(x => (x ? { ...x, uploading: false } : x));
+      const c = err && err.code;
+      toast(!navigator.onLine ? 'İnternet yok, fotoğraf yüklenemedi.' : 'Fotoğraf yüklenemedi, tekrar dene.');
+    }
+  };
+  const cancelTart = () => { const x = tart; setTart(null); if (x && x.newPhoto) dropAsset(x.newPhoto); };
+  const saveTart = async () => {
+    const x = tart; if (!x || x.uploading) return;
+    const n = numOf(x.val); const cur = S.doners[x.id];
+    if (!cur || cur.status !== 'yolda') { setTart(null); return; }
+    if (n <= 0) { toast('Tartılan kiloyu gir.'); return; }
+    if (n > 200) { toast('Bir döner 200 kg’dan büyük olamaz.'); return; }
+    const rec = { ...cur, actualKg: Math.round(n * 1000) / 1000, weighedAt: t };
+    if (x.photoId) rec.photoId = x.photoId;
+    const ok = await safe(() => put('doners', x.id, rec), cur.target + ' · tartılan ' + kgA(rec.actualKg) + ' kg kaydedildi');
+    if (ok) { setTart(null); if (cur.photoId && cur.photoId !== x.photoId) dropAsset(cur.photoId); }
+  };
+
+  const teslim = async (d, force) => {
+    if (busy[d.id]) return;
+    const cur = S.doners[d.id]; if (!cur || cur.status !== 'yolda') return;
+    if ((cur.actualKg == null || (canPhoto && !cur.photoId)) && !force) { setAsk(d.id); return; }
+    setAsk(null);
+    const ch = deliveryCharge(cur, S.customers, t);
+    if (ch.error) { toast(ch.error + '. Müşteriler ekranından fiyat gir.'); return; }
+    mark(d.id, true);
+    const mid = genId();
+    const mvRec = { code: cur.target, kind: 'mal', date: t, ts: Date.now(), kg: ch.kg, price: ch.price, amount: ch.amount, from: cur.owner, donerId: d.id };
+    if (cur.photoId) mvRec.photoId = cur.photoId;
+    const ok1 = await safe(() => put('moves', mid, mvRec));
+    if (ok1) {
+      const ok2 = await safe(() => put('doners', d.id, { ...cur, status: 'teslim', deliveredAt: t, price: ch.price, amount: ch.amount, moveId: mid }), cur.target + ' hesabına ' + tl(ch.amount) + ' yazıldı');
+      if (!ok2) await safe(() => removeDoc('moves', mid));
+    }
+    mark(d.id, false);
+  };
+  const geriAl = async d => {
+    if (confirmUndo !== d.id) { setConfirmUndo(d.id); return; }
+    setConfirmUndo(null);
+    const cur = S.doners[d.id]; if (!cur || cur.status !== 'teslim' || busy[d.id]) return;
+    mark(d.id, true);
+    const mv = cur.moveId ? S.moves[cur.moveId] : null;
+    const ok = cur.moveId ? await safe(() => removeDoc('moves', cur.moveId)) : true;
+    if (ok) {
+      const { deliveredAt: _a, price: _p, amount: _m, moveId: _i, ...rest } = cur;
+      const ok2 = await safe(() => put('doners', d.id, { ...rest, status: 'yolda' }), 'Teslim geri alındı, borç silindi');
+      if (!ok2 && mv) await safe(() => put('moves', cur.moveId, mv)); // döner güncellenemediyse borcu geri yaz
+    }
+    mark(d.id, false);
+  };
+  const stogaDon = async d => {
+    const cur = S.doners[d.id]; if (!cur || cur.status !== 'yolda') return;
+    const { target: _t, sentAt: _s, ...rest } = cur;
+    await safe(() => put('doners', d.id, { ...rest, status: 'stok' }), 'Döner stoğa geri döndü');
+  };
+  const bkg = r1(bekleyen.reduce((s, d) => s + d.kg, 0));
+  const Row = (d, done) => {
+    const other = d.owner !== d.target;
+    const weighed = d.actualKg != null;
+    return html`<div class="row" style=${'flex-wrap:wrap;align-items:flex-start;border-color:' + (done ? '#5EEAD4' : other ? '#C2410C' : 'transparent') + ';background:' + (done ? '#F0FDFA' : '#fff')}>
+      <div style="display:flex;gap:14px;min-width:0">
+        ${d.photoId ? html`<button type="button" class="thumb" aria-label="Etiket fotoğrafını büyüt" onClick=${() => setBig(d.photoId)}><img src=${photoSrc(d.photoId)} alt="Döner etiketi"/></button>` : ''}
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <span style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-size:calc(42px * var(--s));font-weight:800;line-height:1">${d.target}</span><span style="font-size:calc(20px * var(--s));font-weight:700;color:#475569">${nameOf(d.target)}</span></span>
+          ${weighed ? html`<span style="font-size:calc(34px * var(--s));font-weight:800;color:#0F766E">${kgA(d.actualKg)} kg <span style="font-size:calc(18px * var(--s));color:#475569">tartılan · liste ${kg(d.kg)}</span></span>`
+            : html`<span style="font-size:calc(34px * var(--s));font-weight:800;color:#0F766E">${kg(d.kg)} kg <span style=${'font-size:calc(18px * var(--s));color:' + (done ? '#475569' : '#9A3412')}>${done ? 'liste kilosuyla' : 'tartılmadı'}</span></span>`}
+          ${other ? html`<span class="tag" style="align-self:flex-start">${d.owner} stoğundan al</span>` : ''}
+          ${done ? html`<span style="font-size:calc(20px * var(--s));font-weight:700">Hesaba yazıldı: ${tl(d.amount)} (${kgA(weighed ? d.actualKg : d.kg)} kg × ${tl(d.price)})</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto">
+        ${done ? html`<span class="btn ghost small" style="border-color:#0F766E;color:#0F766E">Verildi ✓</span>
+          <button type="button" class="btn ghost small" disabled=${busy[d.id]} onClick=${() => geriAl(d)}>${confirmUndo === d.id ? 'Emin misin?' : 'Geri al'}</button>`
+        : html`<button type="button" class="btn ghost small" onClick=${() => stogaDon(d)}>Stoğa geri</button>
+          <button type="button" class="btn ghost small" style="border-color:#1D4ED8;color:#1D4ED8" onClick=${() => openTart(d)}>${IFis} ${weighed ? 'Tartı / fiş' : 'Tart + fiş'}</button>
+          <button type="button" class="btn teal" style="min-width:calc(170px * var(--s))" disabled=${busy[d.id]} onClick=${() => teslim(d, false)}>Teslim Et</button>`}
+      </div></div>`;
+  };
+  const td = tart ? S.doners[tart.id] : null;
+  const ad = ask ? S.doners[ask] : null;
+  return html`<div class="wrap">
+    <${Top} title="Sabah Teslimat" sub=${fd(t) + ' · Bekleyen ' + bekleyen.length + ' döner · ' + kg(bkg) + ' kg'} go=${go}/>
+    ${bekleyen.length ? bekleyen.map(d => Row(d, false)) : html`<div class="card"><h2>Bekleyen teslimat yok</h2><div class="lbl">Dönerleri Döner Stok ekranından teslimata çıkar.</div><button type="button" class="btn" onClick=${() => go('stok')}>Döner stoğa git</button></div>`}
+    ${verilen.length ? html`<div class="lbl" style="margin-top:6px">Bugün teslim edilenler</div>${verilen.map(d => Row(d, true))}` : ''}
+    ${tart && td ? html`<${Modal} close=${cancelTart}>
+      <h2>${td.target} · tartı ve etiket</h2>
+      <div class="lbl">Liste: ${kg(td.kg)} kg${td.owner !== td.target ? ' · ' + td.owner + ' stoğundan' : ''}. Etikette yazan kiloyu gir.</div>
+      <div class="disp"><b>${tart.val || '0'}</b><span>kg</span></div>
+      <${Keypad} value=${tart.val} set=${v => setTart(x => ({ ...x, val: v }))} comma=${true} dec=${3}/>
+      ${canPhoto ? html`
+        <input id="foto" type="file" accept="image/*" capture="environment" style="display:none" onChange=${onPhoto}/>
+        <div style="display:flex;gap:12px;align-items:center">
+          ${tart.photoId ? html`<button type="button" class="thumb" style="width:calc(110px * var(--s));height:calc(110px * var(--s))" aria-label="Fotoğrafı büyüt" onClick=${() => setBig(tart.photoId)}><img src=${photoSrc(tart.photoId)} alt="Döner etiketi"/></button>` : ''}
+          <label for="foto" class="btn ghost" style="flex:1;cursor:pointer;border-color:#1D4ED8;color:#1D4ED8">${ICam} ${tart.uploading ? 'Yükleniyor…' : tart.photoId ? 'Yeniden çek' : 'Etiket fotoğrafı çek'}</label>
+        </div>` : html`<div class="lbl" style="color:#9A3412">Fotoğraf eklemek için uygulamayı düzenleme yetkisi olan hesapla aç.</div>`}
+      <div class="grid3">
+        <button type="button" class="btn ghost" onClick=${cancelTart}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${tart.uploading || numOf(tart.val) <= 0} onClick=${saveTart}>KAYDET</button>
+      </div>
+    <//>` : ''}
+    ${ad ? html`<${Modal} close=${() => setAsk(null)}>
+      <h2 style="color:#9A3412">Dur! ${ad.target} için eksik var</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="banner" style=${ad.actualKg == null ? '' : 'background:#F0FDFA;border-color:#0F766E;color:#134E4A'}>${ad.actualKg == null ? '✗ Tartılan kilo girilmedi' : '✓ Tartılan kilo: ' + kgA(ad.actualKg) + ' kg'}</div>
+        ${canPhoto ? html`<div class="banner" style=${ad.photoId ? 'background:#F0FDFA;border-color:#0F766E;color:#134E4A' : ''}>${ad.photoId ? '✓ Fiş fotoğrafı var' : '✗ Fiş fotoğrafı çekilmedi'}</div>` : ''}
+      </div>
+      <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s)));font-size:calc(30px * var(--s))" onClick=${() => { setAsk(null); openTart({ id: ask }); }}>Eksikleri tamamla</button>
+      <button type="button" class="btn ghost small" style="align-self:center;border-width:2px" onClick=${() => teslim({ id: ask }, true)}>${ad.actualKg == null ? 'Yine de liste kilosuyla (' + kg(ad.kg) + ' kg) teslim et' : 'Fotoğrafsız teslim et'}</button>
+    <//>` : ''}
+    ${big ? html`<${Modal} close=${() => setBig(null)}><img src=${photoSrc(big)} alt="Döner etiketi" style="width:100%;border-radius:16px"/><button type="button" class="btn ghost" onClick=${() => setBig(null)}>Kapat</button><//>` : ''}
+  </div>`;
+}
+
+// ---------- Müşteri Defteri ----------
+function Defter({ go, pay }) {
+  const cs = custList();
+  const [sel, setSel] = useState(cs[0] ? cs[0].id : null);
+  const [mode, setMode] = useState(pay ? 'para' : 'detay');
+  const [val, setVal] = useState('');
+  const [type, setType] = useState('Nakit');
+  const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [sign, setSign] = useState(1);
+  const [note, setNote] = useState('Devreden borç');
+  const t = today();
+  if (!cs.length) return html`<div class="wrap"><${Top} title="Müşteri Defteri" go=${go}/><div class="card"><h2>Önce müşteri ekle</h2><button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşterilere git</button></div></div>`;
+  const code = S.customers[sel] ? sel : cs[0].id;
+  const c = S.customers[code];
+  const bal = balanceOf(S.moves, code);
+  const total = r2(cs.reduce((s, x) => s + balanceOf(S.moves, x.id), 0));
+  const lp = latestPrice(c);
+  const moves = Object.entries(S.moves).map(([id, mv]) => ({ id, ...mv })).filter(mv => mv.code === code).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 12);
+  const n = val ? parseInt(val, 10) : 0;
+  const doPay = async () => {
+    if (n <= 0 || busy) return; setBusy(true);
+    const left = r2(bal - n);
+    const ok = await safe(() => put('moves', genId(), { code, kind: 'odeme', date: t, ts: Date.now(), amount: n, payType: type }), tl(n) + ' alındı · ' + (left > 0 ? 'Kalan borç ' + tl(left) : left === 0 ? 'Borç kapandı' : 'Fazla ödeme ' + tl(-left)));
+    if (ok) { setVal(''); setMode('detay'); }
+    setBusy(false);
+  };
+  const doFix = async () => {
+    if (n <= 0 || busy) return; setBusy(true);
+    const amt = sign * n;
+    const ok = await safe(() => put('moves', genId(), { code, kind: 'duzeltme', date: t, ts: Date.now(), amount: amt, note: note.trim() || 'Düzeltme' }), (amt > 0 ? 'Borç eklendi: ' : 'Borç düşüldü: ') + tl(n) + ' · yeni bakiye ' + tl(r2(bal + amt)));
+    if (ok) { setVal(''); setMode('detay'); }
+    setBusy(false);
+  };
+  const delPay = async mv => {
+    if (confirmDel !== mv.id) { setConfirmDel(mv.id); return; }
+    setConfirmDel(null);
+    await safe(() => removeDoc('moves', mv.id), 'Kayıt silindi');
+  };
+  return html`<div class="wrap">
+    <${Top} title=${mode === 'para' ? 'Para Al' : 'Müşteri Defteri'} go=${go}/>
+    <div class="two">
+      <div class="side">
+        <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74"><small style="color:#7C2D12">Toplam alacak</small><b style="color:#C2410C;font-size:calc(38px * var(--s))">${tl(total)}</b></div>
+        ${cs.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); }}>
+          <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:calc(16px * var(--s));font-weight:800;opacity:.85">${x.id}</span><span style="font-size:calc(22px * var(--s));font-weight:700">${x.name}</span></span>
+          <span style=${'font-size:calc(' + (b === 0 ? '16' : '23') + 'px * var(--s));font-weight:800;white-space:nowrap;color:' + (on ? '#fff' : b === 0 ? '#475569' : '#C2410C')}>${b === 0 ? 'Borcu yok' : tl(b)}</span></button>`; })}
+      </div>
+      <div class="main card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${code} · ${c.name}</h2>
+          <span class="lbl">${lp ? 'Kilo fiyatı ' + tl(lp.price) + ' · ' + fd(lp.from) + ' tarihinden beri' : 'Kilo fiyatı yok'}</span></div>
+        ${mode === 'detay' ? html`
+          <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74;padding:18px 22px"><small style="color:#7C2D12">Bize borcu</small><b style="color:#C2410C;font-size:calc(62px * var(--s));letter-spacing:-1px">${tl(bal)}</b></div>
+          <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s)));font-size:calc(30px * var(--s))" onClick=${() => setMode('para')}>− PARA ALDIM</button>
+          <button type="button" class="btn ghost small" style="align-self:flex-start" onClick=${() => { setVal(''); setSign(1); setNote(moves.length ? 'Düzeltme' : 'Devreden borç'); setMode('duzelt'); }}>± Devir / düzeltme</button>
+          <div class="lbl">Son hareketler</div>
+          ${moves.length ? moves.map(mv => html`<div class="mv">
+            ${mv.photoId ? html`<a class="thumb" style="width:calc(60px * var(--s));height:calc(60px * var(--s));flex:none" href=${photoSrc(mv.photoId)} target="_blank" rel="noopener" aria-label="Etiket fotoğrafı"><img src=${photoSrc(mv.photoId)} alt="Döner etiketi"/></a>` : ''}
+            <span style="min-width:0;flex:1"><b>${mv.kind === 'mal' ? 'Döner ' + kgA(mv.kg) + ' kg × ' + tl(mv.price) : mv.kind === 'duzeltme' ? mv.note || 'Düzeltme' : mv.payType + ' ödeme'}</b>
+              <small>${fd(mv.date)}${mv.kind === 'mal' && mv.from && mv.from !== mv.code ? ' · ' + mv.from + ' stoğundan geldi' : ''}</small></span>
+            <span style="display:flex;align-items:center;gap:8px">${(() => { const v = mv.kind === 'mal' ? mv.amount : mv.kind === 'duzeltme' ? mv.amount : -mv.amount; return html`<span class=${'amt ' + (v >= 0 ? 'plus' : 'minus')}>${(v >= 0 ? '+' : '−') + tl(Math.abs(v))}</span>`; })()}
+            ${(mv.kind === 'odeme' && mv.date === t) || mv.kind === 'duzeltme' ? html`<button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => delPay(mv)}>${confirmDel === mv.id ? 'Emin misin?' : 'Sil'}</button>` : ''}</span></div>`) : html`<div class="lbl">Hareket yok.</div>`}` : mode !== 'para' ? '' : html`
+          <div class="lbl" style="color:#C2410C">Borcu: ${tl(bal)}</div>
+          <div class="disp"><b>${n ? nf2.format(n) : '0'}</b><span>₺</span></div>
+          <div class="grid2">${['Nakit', 'Havale / EFT'].map(x => html`<button type="button" class=${'btn small ' + (type === x ? '' : 'ghost')} aria-pressed=${type === x} style="min-height:max(44px, calc(64px * var(--s)))" onClick=${() => setType(x)}>${x}</button>`)}</div>
+          <${Keypad} value=${val} set=${setVal} thousand=${true}/>
+          <div class="grid3">
+            <button type="button" class="btn ghost" onClick=${() => { setMode('detay'); setVal(''); }}>Vazgeç</button>
+            <button type="button" class="btn" style="grid-column:span 2" disabled=${busy || n <= 0} onClick=${doPay}>PARAYI ALDIM</button>
+          </div>`}
+        ${mode === 'duzelt' ? html`
+          <div class="lbl">Şu anki bakiye: ${tl(bal)}. Uygulamaya geçmeden önceki borcu ya da bir düzeltmeyi gir.</div>
+          <div class="grid2">
+            <button type="button" class=${'btn small ' + (sign > 0 ? 'orange' : 'ghost')} aria-pressed=${sign > 0} onClick=${() => setSign(1)}>+ Borç ekle</button>
+            <button type="button" class=${'btn small ' + (sign < 0 ? '' : 'ghost')} aria-pressed=${sign < 0} onClick=${() => setSign(-1)}>− Borç düş</button>
+          </div>
+          <label class="fld"><span class="lbl">Açıklama</span><input class="big" value=${note} onInput=${e => setNote(e.target.value)}/></label>
+          <div class="disp"><b>${n ? nf2.format(n) : '0'}</b><span>₺</span></div>
+          <${Keypad} value=${val} set=${setVal} thousand=${true}/>
+          <div class="grid3">
+            <button type="button" class="btn ghost" onClick=${() => { setMode('detay'); setVal(''); }}>Vazgeç</button>
+            <button type="button" class=${'btn ' + (sign > 0 ? 'orange' : '')} style="grid-column:span 2" disabled=${busy || n <= 0} onClick=${doFix}>KAYDET</button>
+          </div>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------- Müşteriler ----------
+function Musteriler({ go }) {
+  const cs = custList();
+  const nextNum = () => Math.max(0, ...custList().map(x => x.num)) + 1;
+  const toDraft = c => { const lp = latestPrice(c); return { num: String(c.num), name: c.name, price: lp ? String(lp.price).replace('.', ',') : '', deri: String(c.deri), gogus: String(c.gogus), but: String(c.but) }; };
+  const blank = () => ({ num: String(nextNum()), name: '', price: '', deri: '0', gogus: '0', but: '0' });
+  const [sel, setSel] = useState(cs[0] ? cs[0].id : null);
+  const [draft, setDraft] = useState(() => (cs[0] ? toDraft(cs[0]) : blank()));
+  const [busy, setBusy] = useState(false);
+  const isNew = !sel || !S.customers[sel];
+  const t = today();
+  const setF = (f, v) => setDraft(d => ({ ...d, [f]: v }));
+  const step = (f, k) => setDraft(d => ({ ...d, [f]: String(Math.max(0, Math.min(100, (parseInt(d[f], 10) || 0) + k))) }));
+  const num = parseInt(draft.num, 10);
+  const vals = { deri: parseInt(draft.deri, 10) || 0, gogus: parseInt(draft.gogus, 10) || 0, but: parseInt(draft.but, 10) || 0 };
+  const total = vals.deri + vals.gogus + vals.but;
+  const price = r2(numOf(draft.price));
+  let problem = '';
+  if (isNew && !(num >= 1)) problem = 'Şube numarası gir.';
+  else if (isNew && S.customers['B' + num]) problem = 'B' + num + ' zaten kayıtlı.';
+  else if (!draft.name.trim()) problem = 'Dükkan adını yaz.';
+  else if (!(price > 0)) problem = 'Kilo fiyatını gir.';
+  else if (total !== 100) problem = 'Oranların toplamı %100 olmalı.';
+  const c = isNew ? null : S.customers[sel];
+  const save = async () => {
+    if (problem || busy) return; setBusy(true);
+    const id = isNew ? 'B' + num : sel;
+    const prices = nextPrices(c ? c.prices : [], price, t);
+    const lp = latestPrice(c);
+    const changed = c && lp && lp.price !== price;
+    const rec = { num: isNew ? num : c.num, name: draft.name.trim(), deri: vals.deri, gogus: vals.gogus, but: vals.but, prices };
+    if (c && c.sample) rec.sample = true;
+    const ok = await safe(() => put('customers', id, rec), id + ' kaydedildi' + (changed ? ' · yeni fiyat bugünden sonraki teslimatlara geçerli' : ''));
+    if (ok) { setSel(id); setDraft(toDraft(rec)); }
+    setBusy(false);
+  };
+  const hist = c && Array.isArray(c.prices) ? [...c.prices].sort((a, b) => (a.from < b.from ? 1 : -1)) : [];
+  const diff = 100 - total;
+  return html`<div class="wrap">
+    <${Top} title="Müşteriler" go=${go}/>
+    <div class="two">
+      <div class="side">
+        <button type="button" class="btn ghost small" style="border:3px dashed #6D28D9;color:#5B21B6;background:#F5F3FF;min-height:max(44px, calc(68px * var(--s)))" onClick=${() => { setSel(null); setDraft(blank()); }}>+ Yeni Müşteri</button>
+        ${cs.map(x => html`<button type="button" class=${'row pick' + (x.id === sel ? ' on' : '')} aria-pressed=${x.id === sel} onClick=${() => { setSel(x.id); setDraft(toDraft(x)); }}><span style="display:flex;align-items:center;gap:12px;min-width:0"><span class="badge">${x.id}</span><span>${x.name}</span></span></button>`)}
+      </div>
+      <div class="main card">
+        <h2>${isNew ? 'Yeni müşteri' : sel + ' · ' + c.name}</h2>
+        <div style="display:grid;grid-template-columns:calc(180px * var(--s)) minmax(0,1fr);gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Şube kodu</span>
+            <span style="display:flex;align-items:center;height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px solid #94A3B8;background:#F8FAFC;overflow:hidden">
+              <span style="display:flex;align-items:center;justify-content:center;width:calc(56px * var(--s));height:100%;background:#E2E8F0;font-size:calc(32px * var(--s));font-weight:800">B</span>
+              ${isNew ? html`<input type="number" inputmode="numeric" min="1" value=${draft.num} onInput=${e => setF('num', e.target.value)} style="width:100%;min-width:0;border:none;background:transparent;padding:0 12px;font-size:calc(32px * var(--s));font-weight:800"/>` : html`<span style="padding:0 12px;font-size:calc(32px * var(--s));font-weight:800">${c.num}</span>`}
+            </span></label>
+          <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Dükkan adı</span><input class="big" value=${draft.name} onInput=${e => setF('name', e.target.value)} placeholder="Örn. Köşe Döner"/></label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Kilo fiyatı (₺/kg)</span>
+          <input class="big" inputmode="decimal" value=${draft.price} onInput=${e => setF('price', e.target.value)} placeholder="Örn. 165"/>
+          <span class="lbl" style="font-size:calc(17px * var(--s))">Fiyat değişirse bugünden sonraki teslimatlara uygulanır. Eski teslimatlar eski fiyatla kalır.</span></label>
+        <div class="lbl">Döner oranları (marine et, toplam %100)</div>
+        ${[['deri', 'Deri'], ['gogus', 'Göğüs'], ['but', 'But']].map(([f, l]) => html`<div class="ratio">
+          <label for=${'o-' + f}>${l}</label>
+          <button type="button" class="step" aria-label=${l + ' oranını azalt'} onClick=${() => step(f, -1)}>−</button>
+          <span class="pct"><span>%</span><input id=${'o-' + f} type="number" inputmode="numeric" min="0" max="100" value=${draft[f]} onInput=${e => setF(f, e.target.value)}/></span>
+          <button type="button" class="step" aria-label=${l + ' oranını artır'} onClick=${() => step(f, 1)}>+</button></div>`)}
+        <div role="status" style=${'display:flex;justify-content:space-between;align-items:center;min-height:max(44px, calc(64px * var(--s)));padding:0 20px;border-radius:16px;font-size:calc(26px * var(--s));font-weight:800;' + (total === 100 ? 'background:#DBEAFE;color:#1E3A8A' : 'background:#FFF7ED;color:#9A3412;border:2px solid #C2410C')}>
+          <span style="font-size:calc(21px * var(--s))">Toplam</span><span>${total === 100 ? '%100 ✓' : '%' + total + ' · ' + (diff > 0 ? '%' + diff + ' eksik' : '%' + (-diff) + ' fazla')}</span></div>
+        ${total === 100 ? (() => { const st = settingsOn(S.settings, t); const km = customerKgCost(vals, costModel(st, kemiksizFor(DATA(), t).val), st); return html`<div class="lbl">Bu oranla kg maliyeti ${tl(r2(km))}${price > 0 ? html` · kâr <b style=${'color:' + (price - km < 0 ? '#9A3412' : '#0F766E')}>${sgn(r2(price - km), tl)}/kg</b>` : ''}</div>`; })() : ''}
+        ${problem ? html`<div class="lbl" style="color:#9A3412">${problem}</div>` : ''}
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(30px * var(--s))" disabled=${!!problem || busy} onClick=${save}>KAYDET</button>
+        ${hist.length ? html`<div class="lbl" style="margin-top:6px">Fiyat geçmişi</div>
+          ${hist.map((h, i) => html`<div class="mv"><b>${tl(h.price)} / kg</b><small style="font-size:calc(18px * var(--s))">${i === 0 ? fd(h.from) + ' tarihinden beri' : fd(h.from) + ' – ' + fd(shiftDay(hist[i - 1].from, -1))}</small></div>`)}` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------- Hesaplar: ortak parçalar ----------
+const pct = n => nf1.format(n * 100);
+const sgn = (n, f) => { const v = f(Math.abs(n)); return (v === f(0) ? '' : n > 0 ? '+' : n < 0 ? '−' : '') + v; };
+const num = v => numOf(v);
+const ILock = html`<svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+function Fld({ label, value, set, unit, hint, text, wide }) {
+  return html`<label class="fld" style=${wide ? 'grid-column:1/-1' : ''}><span class="lbl">${label}</span>
+    <span class="fin"><input class="big" inputmode=${text ? 'text' : 'decimal'} value=${value} onInput=${e => set(e.target.value)}/>${unit ? html`<span class="unit">${unit}</span>` : ''}</span>
+    ${hint ? html`<small class="muted" style="font-size:calc(16px * var(--s));font-weight:600">${hint}</small>` : ''}</label>`;
+}
+function DayNav({ day, setDay }) {
+  const isToday = day === today();
+  return html`<div style="display:flex;gap:8px;align-items:center">
+    <button type="button" class="back" aria-label="Önceki gün" onClick=${() => setDay(shiftDay(day, -1))}>${IBack}</button>
+    <button type="button" class="back" aria-label="Sonraki gün" disabled=${isToday} onClick=${() => setDay(shiftDay(day, 1))} style="transform:scaleX(-1)">${IBack}</button></div>`;
+}
+const settingsFor = day => settingsOn(S.settings, day);
+const kvRow = (k, v, strong, color) => html`<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E2E8F0"><span class="lbl">${k}</span><span style=${'font-size:calc(' + (strong ? 28 : 23) + 'px * var(--s));font-weight:800;white-space:nowrap' + (color ? ';color:' + color : '')}>${v}</span></div>`;
+const exampleBanner = s => (!s.from ? html`<div class="banner">Oranlar ve fiyatlar şu an Excel'deki örnek değerler. Oranlar & Fiyatlar ekranından kendi rakamlarını girip kaydet.</div>` : '');
+
+// ---------- PIN ----------
+const LOCK_MIN = 15;
+const isUnlocked = () => UI.unlockedAt && Date.now() - UI.unlockedAt < LOCK_MIN * 60000;
+addEventListener('pointerdown', () => { if (isUnlocked()) UI.unlockedAt = Date.now(); }, true);
+addEventListener('keydown', () => { if (isUnlocked()) UI.unlockedAt = Date.now(); }, true);
+setInterval(() => { if (UI.unlockedAt && !isUnlocked()) { UI.unlockedAt = 0; emit(); } }, 30000);
+async function hashPin(pin, salt) {
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 2166136261; for (const ch of salt + ':' + pin) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return 'f' + (h >>> 0).toString(16); }
+}
+function PinGate({ go, onOk, change }) {
+  const cfg = S.config.pin;
+  const setup = change || !cfg;
+  const [step, setStep] = useState(change && cfg ? 'eski' : setup ? 'yeni' : 'gir');
+  const [val, setVal] = useState('');
+  const [first, setFirst] = useState('');
+  const [err, setErr] = useState('');
+  const press = async k => {
+    if (k === 'sil') { setVal(v => v.slice(0, -1)); return; }
+    if (k === '') return;
+    const v = (val + k).slice(0, 4); setVal(v); setErr('');
+    if (v.length < 4) return;
+    if (step === 'gir' || step === 'eski') {
+      const h = await hashPin(v, cfg.salt);
+      if (h === cfg.hash) { if (step === 'eski') { setStep('yeni'); setVal(''); } else { UI.unlockedAt = Date.now(); onOk(); } }
+      else { setErr('PIN yanlış'); setVal(''); }
+    } else if (step === 'yeni') { setFirst(v); setStep('tekrar'); setVal(''); }
+    else if (step === 'tekrar') {
+      if (v !== first) { setErr('PIN’ler aynı değil, baştan gir'); setStep('yeni'); setVal(''); return; }
+      const salt = genId(); const hash = await hashPin(v, salt);
+      const ok = await safe(() => put('config', 'pin', { salt, hash }), 'PIN kaydedildi');
+      if (ok) { UI.unlockedAt = Date.now(); onOk(); }
+    }
+  };
+  const title = { gir: 'PIN gir', eski: 'Mevcut PIN’i gir', yeni: setup && !cfg ? 'Yeni PIN belirle (4 rakam)' : 'Yeni PIN (4 rakam)', tekrar: 'Yeni PIN’i tekrar gir' }[step];
+  return html`<div class="wrap" style="max-width:560px">
+    <${Top} title=${change ? 'PIN değiştir' : 'Kilitli bölüm'} sub=${'Et, müşteriler ve hesap bölümleri PIN ile korunur'} go=${go} tabs=${false}/>
+    <div class="card" style="align-items:center;gap:18px">
+      <div style="display:flex;align-items:center;gap:10px;color:#334155">${ILock}<h2>${title}</h2></div>
+      <div style="display:flex;gap:16px" aria-label=${val.length + ' rakam girildi'}>${[0, 1, 2, 3].map(i => html`<span style=${'width:calc(28px * var(--s));height:calc(28px * var(--s));border-radius:50%;border:3px solid #1D4ED8;background:' + (i < val.length ? '#1D4ED8' : '#fff')}></span>`)}</div>
+      ${err ? html`<div class="lbl" style="color:#9A3412">${err}</div>` : ''}
+      <div class="keys" style="width:100%">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'sil'].map(k => k === '' ? html`<span></span>` : html`<button type="button" class=${'key' + (k === 'sil' ? ' del' : '')} aria-label=${k === 'sil' ? 'Sil' : k} onClick=${() => press(k)}>${k === 'sil' ? 'Sil' : k}</button>`)}</div>
+      ${!setup ? html`<div class="lbl" style="font-size:calc(16px * var(--s));text-align:center">${DENEME ? 'Deneme sürümünün PIN’i: 1234' : 'PIN’i unutursan Claude’a “PIN’i sıfırla” de.'}</div>` : ''}
+    </div></div>`;
+}
+
+// ---------- Mal girişi & iş partileri ----------
+function Mal({ go }) {
+  const [day, setDay] = useState(today());
+  const [mf, setMf] = useState(null);
+  const [pf, setPf] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const s = settingsFor(day);
+  const gelis = (byDate(S.mal)[day] || []).slice().sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')) || (a.ts || 0) - (b.ts || 0));
+  const partis = partiListOn(DATA(), day);
+  const geldi = {}, islendi = {};
+  gelis.forEach(x => { geldi[x.tur] = (geldi[x.tur] || 0) + x.kg; });
+  partis.forEach(p => p.calc.gir.forEach(g => { islendi[g.tur] = (islendi[g.tur] || 0) + g.kg; }));
+  const isT = MAL.filter(m => m.is);
+  const names = (() => {
+    const seen = new Map(); const touch = (n, ts) => { if (n) seen.set(n, Math.max(seen.get(n) || 0, ts || 0)); };
+    Object.values(S.kesim).forEach(k => touch(k.isci, k.ts)); Object.values(S.parti).forEach(p => (p.isciler || []).forEach(n => touch(n, p.ts)));
+    return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 12);
+  })();
+  const T = partis.reduce((a, p) => ({ gir: a.gir + p.calc.girKg, et: a.et + (p.calc.stdOk ? p.calc.et : 0), std: a.std + (p.calc.stdOk ? p.calc.etStd : 0), odeme: a.odeme + p.calc.odeme }), { gir: 0, et: 0, std: 0, odeme: 0 });
+  const gelenKg = sumBy(gelis, x => x.kg);
+  const fireT = T.std > 0 ? (T.et - T.std) / T.std : null;
+  const str = v => (v ? String(Math.round(v * 1000) / 1000).replace('.', ',') : '');
+  const del = async (col, id, msg) => { const key = col + id; if (confirmDel !== key) { setConfirmDel(key); return; } setConfirmDel(null); await safe(() => removeDoc(col, id), msg); };
+
+  // --- mal geldi ---
+  const priceStr = tur => { const f = malPrice(S.mal, tur, day); return f != null ? String(r2(f)).replace('.', ',') : tur === 'butun' ? String(s.tavukFiyat).replace('.', ',') : ''; };
+  const openMal = () => { const now = new Date(); setMf({ tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' }); };
+  const MF = (k, v) => setMf(f => ({ ...f, [k]: v }));
+  const saveMal = async () => {
+    const k = num(mf.kg), f = num(mf.fiyat);
+    if (!(k > 0)) { toast('Gelen malın kilosunu gir.'); return; }
+    if (!(f > 0)) { toast('Kilo fiyatını gir.'); return; }
+    setBusy(true);
+    const ok = await safe(() => put('mal', genId(), { date: day, saat: mf.saat || '', tur: mf.tur, kg: Math.round(k * 1000) / 1000, fiyat: r2(f), ts: Date.now() }), malAd(mf.tur) + ' · ' + kg(k) + ' kg kaydedildi');
+    if (ok) setMf(null);
+    setBusy(false);
+  };
+
+  // --- iş partisi ---
+  const openParti = p => {
+    const g = {}; isT.forEach(m => { g[m.id] = ''; });
+    if (p) {
+      p.calc.gir.forEach(x => { g[x.tur] = str(x.kg); });
+      setPf({ id: p.id, g, kanat: str(p.calc.cik.kanat), gogus: str(p.calc.cik.gogus), but: str(p.calc.cik.but), isciler: [...p.calc.isciler], yeni: '', elle: p.calc.elle, pay: Object.fromEntries(p.calc.isciler.map(n => [n, String(p.calc.paylar[n]).replace('.', ',')])) });
+    } else {
+      isT.forEach(m => { g[m.id] = str(Math.max(0, (geldi[m.id] || 0) - (islendi[m.id] || 0))); });
+      setPf({ id: null, g, kanat: '', gogus: '', but: '', isciler: [], yeni: '', elle: false, pay: {} });
+    }
+  };
+  const PF = (k, v) => setPf(f => ({ ...f, [k]: v }));
+  const recOf = f => {
+    const r = { date: day, girdiler: isT.map(m => ({ tur: m.id, kg: num(f.g[m.id]) })).filter(x => x.kg > 0), cikan: { kanat: num(f.kanat), gogus: num(f.gogus), but: num(f.but) }, isciler: f.isciler };
+    if (f.elle) r.paylar = Object.fromEntries(f.isciler.map(n => [n, r2(num(f.pay[n]))]));
+    return r;
+  };
+  const prev = pf ? partiCalc(recOf(pf), s) : null;
+  const toggleIsci = n => setPf(f => ({ ...f, isciler: f.isciler.includes(n) ? f.isciler.filter(x => x !== n) : [...f.isciler, n] }));
+  const addIsci = () => setPf(f => { const n = f.yeni.trim(); return !n || f.isciler.includes(n) ? { ...f, yeni: '' } : { ...f, isciler: [...f.isciler, n], yeni: '' }; });
+  const toggleElle = () => setPf(f => {
+    if (f.elle) return { ...f, elle: false };
+    const eq = esitBol(partiCalc(recOf({ ...f, elle: false }), s).odemeHesap, f.isciler);
+    return { ...f, elle: true, pay: Object.fromEntries(f.isciler.map(n => [n, String(eq[n]).replace('.', ',')])) };
+  });
+  const saveParti = async () => {
+    const r = recOf(pf);
+    if (!r.girdiler.length) { toast('İşlenen malın kilosunu gir.'); return; }
+    if (!r.isciler.length) { toast('Bu partide çalışan işçileri seç.'); return; }
+    if (r.cikan.kanat + r.cikan.gogus + r.cikan.but <= 0) { toast('Çıkan kiloları gir.'); return; }
+    setBusy(true);
+    const id = pf.id || genId(); const old = pf.id ? S.parti[pf.id] : null;
+    const rec = { ...r, ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
+    const ok = await safe(() => put('parti', id, rec), 'İş partisi kaydedildi · ödeme ' + tl(partiCalc(r, s).odeme));
+    if (ok) setPf(null);
+    setBusy(false);
+  };
+  const durumTag = c => c.durum === 'stdYok' ? ['Standart girilmedi', '#334155', '#F1F5F9'] : c.durum === 'fazla' ? ['Fazla fire: et ' + sgn(c.etOran, pct) + '%', '#9A3412', '#FFF7ED'] : c.durum === 'yuksek' ? ['Standarttan fazla et: ' + sgn(c.etOran, pct) + '%', '#1E3A8A', '#DBEAFE'] : ['Normal: et ' + sgn(c.etOran, pct) + '%', '#134E4A', '#F0FDFA'];
+  const partRow = (label, c, p) => (c.cik[p] > 0 || c.std[p] > 0 ? html`<div class="tr3"><span>${label}</span><span>${kg(c.cik[p])}</span><span class="muted">${c.stdOk ? kg(c.std[p]) : '—'}</span><span style=${'color:' + (!c.stdOk ? '#475569' : c.fark[p] < 0 ? '#9A3412' : '#0F766E')}>${c.stdOk ? sgn(c.fark[p], kg) : '—'}</span></div>` : '');
+  const allNames = pf ? [...new Set([...names, ...pf.isciler])] : [];
+  const kalanTxt = m => { const g = geldi[m.id] || 0, i = islendi[m.id] || 0; return !m.is ? 'marinasyona hazır' : g - i > 0.05 ? kg(g - i) + ' kg bekliyor' : i - g > 0.05 ? kg(i - g) + ' kg önceki günden' : 'hepsi işlendi'; };
+  return html`<div class="wrap">
+    <${Top} title="Mal & İşçi" sub=${fd(day) + ' · gelen ' + kg(gelenKg) + ' kg · işçi ödemesi ' + tl(r2(T.odeme))} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
+    ${exampleBanner(s)}
+    <div class="grid2">
+      <button type="button" class="btn" onClick=${openMal}>+ Mal geldi</button>
+      <button type="button" class="btn orange" onClick=${() => openParti(null)}>+ İş partisi</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>Gelen mal</small><b>${kg(gelenKg)} kg</b></div>
+      <div class="stat"><small>İşlenen</small><b>${kg(T.gir)} kg</b></div>
+      <div class="stat"><small>Et / standart</small><b style=${'color:' + (fireT == null ? '#475569' : fireT < -s.fireEsik ? '#9A3412' : '#0F766E')}>${fireT == null ? '—' : sgn(fireT, pct) + '%'}</b></div>
+      <div class="stat"><small>İşçi ödemesi</small><b>${tl(r2(T.odeme))}</b></div>
+    </div>
+
+    <h2 style="margin-top:4px">Gelen mal</h2>
+    ${gelis.length ? html`${gelis.map(x => html`<div class="mv">
+        <span style="min-width:0;flex:1"><b>${x.saat ? x.saat + ' · ' : ''}${malAd(x.tur)}</b><small>${kgA(x.kg)} kg × ${tl(x.fiyat)} = ${tl(r2(x.kg * x.fiyat))}</small></span>
+        <button type="button" class="del-x" aria-label="Mal girişini sil" onClick=${() => del('mal', x.id, 'Mal girişi silindi')}>${confirmDel === 'mal' + x.id ? 'Emin misin?' : 'Sil'}</button></div>`)}
+      <div class="tbl">${MAL.filter(m => geldi[m.id] || islendi[m.id]).map(m => html`<div class="tr4" style="grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr)) minmax(0,1.4fr)"><span>${m.ad}</span><span>${kg(geldi[m.id] || 0)} kg</span><span>${m.is ? kg(islendi[m.id] || 0) + ' kg' : '—'}</span><span class="muted" style="font-size:calc(17px * var(--s))">${kalanTxt(m)}</span></div>`)}</div>`
+      : html`<div class="card"><div class="lbl">Bu gün mal girişi yok. Her geliş ayrı kaydedilir: mal türü, kilo ve kilo fiyatı.</div></div>`}
+
+    <h2 style="margin-top:4px">İş partileri</h2>
+    ${partis.length ? partis.map(p => { const c = p.calc; const [dt, dc, db] = durumTag(c); return html`<div class="card" style="gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:calc(24px * var(--s));font-weight:800">${c.gir.map(g => malAd(g.tur) + ' ' + kg(g.kg) + ' kg').join(' + ')}${p.eski ? html`<span class="pcs">eski kayıt</span>` : ''}</div>
+        <span class="tag" style=${'color:' + dc + ';background:' + db + ';border-color:' + dc}>${dt}</span>
+      </div>
+      <div class="tr3 head"><span>Çıkan</span><span>kg</span><span>Standart</span><span>Fark</span></div>
+      ${partRow('Kanat', c, 'kanat')}${partRow('Göğüs eti', c, 'gogus')}${partRow('But eti', c, 'but')}
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span style="font-size:calc(26px * var(--s));font-weight:800">Ödeme: ${tl(c.odeme)}</span>
+        <span class="muted" style="font-size:calc(17px * var(--s));font-weight:700">${c.elle ? (p.eski ? 'eski hesap' : 'paylar elle girildi · hesaplanan ' + tl(c.odemeHesap)) : c.isciler.length > 1 ? c.isciler.length + ' kişiye eşit bölündü' : ''}</span>
+      </div>
+      <div class="chips">${c.isciler.map(n => html`<span class="tag" style="background:#F1F5F9;color:#0F172A;border-color:#94A3B8">${n} · ${tl(c.paylar[n])}</span>`)}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        ${p.eski ? '' : html`<button type="button" class="btn ghost small" onClick=${() => openParti(p)}>Düzelt</button>`}
+        <button type="button" class="del-x" style="height:max(44px, calc(60px * var(--s)))" onClick=${() => del(p.eski ? 'kesim' : 'parti', p.id, 'İş partisi silindi')}>${confirmDel === (p.eski ? 'kesim' : 'parti') + p.id ? 'Emin misin?' : 'Sil'}</button>
+      </div></div>`; })
+      : html`<div class="card"><div class="lbl">Bu gün iş partisi yok. Parti: hangi mal işlendi, ne çıktı, kimler çalıştı. Fire ve ödeme otomatik hesaplanır, ödeme çalışanlara bölünür.</div></div>`}
+
+    ${mf ? html`<${Modal} close=${() => setMf(null)}>
+      <h2>Mal geldi · ${fd(day)}</h2>
+      <div class="g2">${MAL.map(m => html`<button type="button" class=${'btn small ' + (mf.tur === m.id ? '' : 'ghost')} aria-pressed=${mf.tur === m.id} onClick=${() => setMf(f => ({ ...f, tur: m.id, fiyat: priceStr(m.id) }))}>${m.ad}</button>`)}</div>
+      <div class="fgrid">
+        <${Fld} label="Kilo" unit="kg" value=${mf.kg} set=${v => MF('kg', v)}/>
+        <${Fld} label="Kilo fiyatı (KDV hariç)" unit="₺/kg" value=${mf.fiyat} set=${v => MF('fiyat', v)}/>
+        <label class="fld"><span class="lbl">Saat</span><input class="big" type="time" value=${mf.saat} onInput=${e => MF('saat', e.target.value)}/></label>
+      </div>
+      ${num(mf.kg) > 0 && num(mf.fiyat) > 0 ? html`<div class="lbl">Tutar: ${tl(r2(num(mf.kg) * num(mf.fiyat)))} (KDV hariç)${MAL.find(m => m.id === mf.tur).is ? '' : ' · işçiliksiz, doğrudan marinasyona gider'}</div>` : ''}
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setMf(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveMal}>KAYDET</button></div>
+    <//>` : ''}
+
+    ${pf ? html`<${Modal} close=${() => setPf(null)}>
+      <h2>${pf.id ? 'Partiyi düzelt' : 'İş partisi'} · ${fd(day)}</h2>
+      <div class="lbl">1. İşlenen mal</div>
+      <div class="fgrid">${isT.map(m => html`<${Fld} label=${m.ad} unit="kg" value=${pf.g[m.id]} set=${v => setPf(f => ({ ...f, g: { ...f.g, [m.id]: v } }))}/>`)}</div>
+      <div class="lbl">2. Çıkanlar</div>
+      <div class="fgrid">
+        <${Fld} label="Kanat" unit="kg" value=${pf.kanat} set=${v => PF('kanat', v)} hint=${prev.stdOk && prev.std.kanat > 0 ? 'Standart ' + kg(prev.std.kanat) : ''}/>
+        <${Fld} label="Kemiksiz göğüs" unit="kg" value=${pf.gogus} set=${v => PF('gogus', v)} hint=${prev.stdOk && prev.std.gogus > 0 ? 'Standart ' + kg(prev.std.gogus) : ''}/>
+        <${Fld} label="Kemiksiz but" unit="kg" value=${pf.but} set=${v => PF('but', v)} hint=${prev.stdOk && prev.std.but > 0 ? 'Standart ' + kg(prev.std.but) : ''}/>
+      </div>
+      <div class="lbl">3. Çalışan işçiler (${pf.isciler.length} kişi)</div>
+      <div class="chips">${allNames.map(n => html`<button type="button" class=${'btn small ' + (pf.isciler.includes(n) ? 'orange' : 'ghost')} aria-pressed=${pf.isciler.includes(n)} onClick=${() => toggleIsci(n)}>${pf.isciler.includes(n) ? '✓ ' : ''}${n}</button>`)}</div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <label class="fld" style="flex:1"><span class="lbl" style="font-size:calc(16px * var(--s))">Yeni işçi adı</span><input class="big" value=${pf.yeni} onInput=${e => PF('yeni', e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addIsci(); } }}/></label>
+        <button type="button" class="btn ghost small" style="min-height:max(44px, calc(72px * var(--s)))" onClick=${addIsci}>Ekle</button>
+      </div>
+      <div class="card" style="background:#F1F5F9;gap:4px">
+        ${kvRow('Et (göğüs+but) standarda göre', prev.etOran == null ? (prev.gir.length ? 'standart girilmedi' : '—') : sgn(prev.etFark, kg) + ' kg (' + sgn(prev.etOran, pct) + '%)', false, prev.etOran != null && prev.etOran < -s.fireEsik ? '#9A3412' : '#0F766E')}
+        ${kvRow('Hesaplanan ödeme', tl(prev.odemeHesap), true)}
+        ${pf.isciler.length && !pf.elle ? kvRow('Kişi başı (eşit)', pf.isciler.length + ' × ' + tl(prev.paylar[pf.isciler[0]])) : ''}
+        ${pf.elle ? html`${pf.isciler.map(n => html`<${Fld} label=${n + ' payı'} unit="₺" value=${pf.pay[n] || ''} set=${v => setPf(f => ({ ...f, pay: { ...f.pay, [n]: v } }))}/>`)}
+          ${kvRow('Elle toplam', tl(prev.odeme), true, Math.abs(prev.odeme - prev.odemeHesap) > 0.005 ? '#9A3412' : '#0F766E')}` : ''}
+      </div>
+      ${pf.isciler.length ? html`<button type="button" class="btn ghost small" aria-pressed=${pf.elle} onClick=${toggleElle}>${pf.elle ? 'Eşit bölüşüme dön' : 'Payları elle gir'}</button>` : ''}
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setPf(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveParti}>KAYDET</button></div>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Marinasyon ----------
+function Marine({ go }) {
+  const [day, setDay] = useState(today());
+  const [form, setForm] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const s = settingsFor(day); const m = costModel(s);
+  const list = Object.entries(S.marine).map(([id, x]) => ({ id, ...x })).filter(x => x.date === day).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const partis = partiListOn(DATA(), day);
+  const hazir = (byDate(S.mal)[day] || []);
+  const cigG = sumBy(partis, p => p.calc.cik.gogus) + sumBy(hazir.filter(x => x.tur === 'kemiksizGogus'), x => x.kg);
+  const cigB = sumBy(partis, p => p.calc.cik.but) + sumBy(hazir.filter(x => x.tur === 'kemiksizBut'), x => x.kg);
+  const doneG = sumBy(list, x => x.gogus), doneB = sumBy(list, x => x.but);
+  const open = () => setForm({ gogus: String(r1(Math.max(0, cigG - doneG)) || '').replace('.', ','), but: String(r1(Math.max(0, cigB - doneB)) || '').replace('.', ','), deri: '' });
+  const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const prev = form ? marineCalc({ gogus: num(form.gogus), but: num(form.but), deri: num(form.deri) }, s, m) : null;
+  const save = async () => {
+    const r = { date: day, gogus: num(form.gogus), but: num(form.but), deri: num(form.deri), artis: s.marineArtis, ts: Date.now() };
+    if (!(r.gogus + r.but + r.deri > 0)) { toast('Kilo gir.'); return; }
+    setBusy(true); const ok = await safe(() => put('marine', genId(), r), 'Marinasyon kaydedildi'); if (ok) setForm(null); setBusy(false);
+  };
+  const del = async x => { if (confirmDel !== x.id) { setConfirmDel(x.id); return; } setConfirmDel(null); await safe(() => removeDoc('marine', x.id), 'Silindi'); };
+  const totals = list.reduce((a, x) => { const c = marineCalc(x, s, m); return { toplam: a.toplam + c.toplam, karisim: a.karisim + c.karisim }; }, { toplam: 0, karisim: 0 });
+  return html`<div class="wrap">
+    <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg marine'} go=${go} right=${html`<${DayNav} day=${day} setDay=${setDay}/>`}/>
+    ${exampleBanner(s)}
+    <button type="button" class="btn" onClick=${open}>+ Marinasyon partisi</button>
+    ${cigG + cigB > 0 ? html`<div class="lbl">Bu gün hazır çiğ et (işlenen + kemiksiz gelen): göğüs ${kg(cigG)} kg · but ${kg(cigB)} kg · marine edilen: ${kg(doneG)} + ${kg(doneB)} kg</div>` : ''}
+    ${list.map(x => { const c = marineCalc(x, s, m); return html`<div class="card" style="gap:6px">
+      ${kvRow('Giren göğüs / but', kg(x.gogus) + ' + ' + kg(x.but) + ' kg')}
+      ${kvRow('Çıkan marine göğüs / but', kg(c.cGogus) + ' + ' + kg(c.cBut) + ' kg')}
+      ${kvRow('Ayrılan deri', kg(x.deri) + ' kg')}
+      ${kvRow('Harcanması gereken karışım', kg(c.karisim) + ' kg')}
+      ${kvRow('Toplam çıkan', kg(c.toplam) + ' kg', true, '#0E7490')}
+      <button type="button" class="del-x" style="align-self:flex-end;height:max(44px, calc(56px * var(--s)))" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></div>`; })}
+    ${!list.length ? html`<div class="card"><h2>Bu gün marinasyon yok</h2><div class="lbl">Parti girince karışımın kaç kilo olacağı ve hangi malzemeden ne kadar konacağı hesaplanır.</div></div>` : ''}
+    ${form ? html`<${Modal} close=${() => setForm(null)}>
+      <h2>Marinasyon partisi · ${fd(day)}</h2>
+      <div class="fgrid">
+        <${Fld} label="Giren çiğ göğüs" unit="kg" value=${form.gogus} set=${v => F('gogus', v)}/>
+        <${Fld} label="Giren çiğ but" unit="kg" value=${form.but} set=${v => F('but', v)}/>
+        <${Fld} label="Ayrılan deri" unit="kg" value=${form.deri} set=${v => F('deri', v)}/>
+      </div>
+      <div class="card" style="background:#F1F5F9;gap:4px">
+        ${kvRow('Çıkan marine (göğüs+but)', kg(prev.cGogus + prev.cBut) + ' kg')}
+        ${kvRow('Harcanması gereken karışım', kg(prev.karisim) + ' kg', true, '#0E7490')}
+        <div class="lbl" style="margin-top:6px">Malzemeler</div>
+        ${prev.malzeme.filter(x => x.kg > 0).map(x => kvRow(x.ad, kg(x.kg) + ' kg'))}
+      </div>
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setForm(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Gün sonu terazisi ----------
+function Sayim({ go }) {
+  const [day, setDay] = useState(today());
+  const s = settingsFor(day);
+  const rows = teraziSeries({ doners: S.doners, customers: S.customers, marine: S.marine, sayim: S.sayim, settings: S.settings }, day);
+  const r = rows[day];
+  const cur = S.sayim[day];
+  const [f, setF] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const form = f || { gogus: cur ? String(cur.gogus).replace('.', ',') : '', but: cur ? String(cur.but).replace('.', ',') : '', deri: cur ? String(cur.deri).replace('.', ',') : '' };
+  const setK = (k, v) => setF({ ...form, [k]: v });
+  const firstDay = !Object.values(S.sayim).some(x => x.acilis || x.date < day) && !Object.values(S.marine).some(x => x.date < day);
+  const [ac, setAc] = useState({ gogus: '', but: '', deri: '' });
+  const save = async () => {
+    const rec = { date: day, gogus: num(form.gogus), but: num(form.but), deri: num(form.deri), ts: Date.now() };
+    setBusy(true); const ok = await safe(() => put('sayim', day, rec), 'Sayım kaydedildi'); if (ok) setF(null); setBusy(false);
+  };
+  const saveAc = async () => {
+    const d = shiftDay(day, -1);
+    await safe(() => put('sayim', d, { date: d, gogus: num(ac.gogus), but: num(ac.but), deri: num(ac.deri), ts: Date.now(), acilis: true }), 'Açılış devri kaydedildi');
+  };
+  const delSayim = async () => { await safe(() => removeDoc('sayim', day), 'Sayım silindi'); setF(null); };
+  const tot = o => o.gogus + o.but + o.deri;
+  const line = (label, o, opts = {}) => html`<div class="tr4 ${opts.strong ? 'strong' : ''}"><span>${label}</span><span>${kg(o.gogus)}</span><span>${kg(o.but)}</span><span>${kg(o.deri)}</span><span>${kg(tot(o))}</span></div>`;
+  const durum = { denk: ['DENK ✓', '#134E4A', '#F0FDFA'], eksik: ['ET EKSİK: kayıp / çalıntı kontrol et', '#9A3412', '#FFF7ED'], fazla: ['ET FAZLA: dönerler eksik gramajlı olabilir', '#1E3A8A', '#DBEAFE'], sayimYok: ['Sayım girilmedi, fark hesaplanamaz', '#334155', '#F1F5F9'], acilis: ['Açılış devri günü: sayım başlangıç kabul edildi', '#334155', '#F1F5F9'] }[r.durum];
+  return html`<div class="wrap">
+    <${Top} title="Gün Sonu Terazisi" sub=${fd(day) + ' · marine et dengesi'} go=${go} back="hesaplar" right=${html`<${DayNav} day=${day} setDay=${(d) => { setDay(d); setF(null); }}/>`}/>
+    ${firstDay ? html`<div class="card"><h2>Açılış devri</h2><div class="lbl">İlk gün: dünden elde kalan marine eti gir. Sonraki günlerde devir kendiliğinden gelir.</div>
+      <div class="fgrid"><${Fld} label="Göğüs" unit="kg" value=${ac.gogus} set=${v => setAc(a => ({ ...a, gogus: v }))}/><${Fld} label="But" unit="kg" value=${ac.but} set=${v => setAc(a => ({ ...a, but: v }))}/><${Fld} label="Deri" unit="kg" value=${ac.deri} set=${v => setAc(a => ({ ...a, deri: v }))}/></div>
+      <button type="button" class="btn ghost" onClick=${saveAc}>Açılış devrini kaydet</button></div>` : ''}
+    <div class="tbl">
+      <div class="tr4 head"><span></span><span>Göğüs</span><span>But</span><span>Deri</span><span>Toplam</span></div>
+      ${line('Devir (dünden)', r.devir)}
+      ${line('+ Bugün marine', r.plus)}
+      ${line('− Dönerde kullanılan', r.used)}
+      ${line('Olması gereken', r.hesap, { strong: true })}
+      ${r.say ? line('Sayım', r.say) : ''}
+    </div>
+    <div class="banner" style=${'font-size:calc(24px * var(--s));color:' + durum[1] + ';background:' + durum[2] + ';border-color:' + durum[1]}>${durum[0]}${r.say && r.fark != null ? ' · fark ' + sgn(r.fark, kg) + ' kg (tolerans ' + kg(s.tolerans) + ' kg)' : ''}</div>
+    <div class="lbl">Dönerde kullanılan: bugün üretilen ${r.used.adet} döner (${kg(r.used.kg)} kg) × her müşterinin oranı.</div>
+    <div class="card">
+      <h2>Gün sonu sayımı</h2>
+      <div class="fgrid">
+        <${Fld} label="Göğüs" unit="kg" value=${form.gogus} set=${v => setK('gogus', v)} hint=${'Hesap: ' + kg(r.hesap.gogus)}/>
+        <${Fld} label="But" unit="kg" value=${form.but} set=${v => setK('but', v)} hint=${'Hesap: ' + kg(r.hesap.but)}/>
+        <${Fld} label="Deri" unit="kg" value=${form.deri} set=${v => setK('deri', v)} hint=${'Hesap: ' + kg(r.hesap.deri)}/>
+      </div>
+      <div class="grid3">${cur ? html`<button type="button" class="btn ghost" onClick=${delSayim}>Sayımı sil</button>` : html`<span></span>`}
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>SAYIMI KAYDET</button></div>
+      <div class="lbl" style="font-size:calc(16px * var(--s))">Yarına devir: sayım girildiyse sayımdan, girilmediyse hesaptan (${kg(tot(r.kalan))} kg).</div>
+    </div>
+  </div>`;
+}
+
+// ---------- Maliyet & Kâr ----------
+function Maliyet({ go }) {
+  const t = today(); const s = settingsFor(t);
+  const kf = kemiksizFor(DATA(), t);
+  const m = costModel(s, kf.val);
+  const cs = custList();
+  const kaynak = kf.src === 'gercek' ? 'bugünkü alımlar ve çıkan etten' : kf.src === 'onceki' ? fd(kf.date) + ' günü alımlarından (bugün işlenen mal yok)' : 'Oranlar ekranındaki standart fiyattan (son 30 günde mal girişi yok)';
+  return html`<div class="wrap">
+    <${Top} title="Maliyet & Kâr" sub=${'Bugün · kemiksiz et ' + tl(r2(m.kemiksiz)) + '/kg'} go=${go}/>
+    ${exampleBanner(s)}
+    <div class="banner" style="background:#DBEAFE;border-color:#1D4ED8;color:#1E3A8A">Kemiksiz et maliyeti: ${kaynak}.</div>
+    <div class="stats">
+      <div class="stat"><small>Kemiksiz et</small><b>${tl(r2(m.kemiksiz))}/kg</b></div>
+      <div class="stat"><small>Marine et</small><b>${tl(r2(m.marineMaliyet))}/kg</b></div>
+      <div class="stat"><small>Ort. 1 kg döner</small><b>${tl(r2(m.ortDoner))}</b></div>
+      <div class="stat"><small>Kg başı sabit gider</small><b>${tl(r2(m.kgSabit))}</b></div>
+    </div>
+    <div class="tbl">
+      <div class="tr5 head"><span>Müşteri</span><span>Kg maliyet</span><span>Satış</span><span>Kâr/kg</span><span>Kâr %</span></div>
+      ${cs.map(c => { const k = customerKgCost(c, m, s); const lp = latestPrice(c); const p = lp ? lp.price : null; const kar = p != null ? p - k : null; return html`<div class="tr5">
+        <span><b style="font-size:calc(30px * var(--s))">${c.id}</b><small class="pcs">G${c.gogus} B${c.but} D${c.deri}</small></span>
+        <span>${tl(r2(k))}</span><span>${p != null ? tl(p) : '—'}</span>
+        <span style=${'font-weight:800;color:' + (kar == null ? '#475569' : kar < 0 ? '#9A3412' : '#0F766E')}>${kar == null ? '—' : sgn(r2(kar), tl)}</span>
+        <span style=${'color:' + (kar == null ? '#475569' : kar < 0 ? '#9A3412' : '#0F766E')}>${kar == null || !p ? '—' : sgn(kar / p, pct) + '%'}</span></div>`; })}
+    </div>
+    <div class="card" style="gap:2px">
+      <h2>Hesabın dökümü</h2>
+      ${kvRow('Kemiksiz et (kullanılan)', tl(r2(m.kemiksiz)) + '/kg', true)}
+      ${kvRow('Kemiksiz et (standart, bütün tavuktan)', tl(r2(m.kemiksizStd)) + '/kg')}
+      ${kvRow('İşçilik', s.iscilikMaliyete ? 'maliyete dahil' : 'maliyete katılmıyor')}
+      ${kvRow('Karışım (parti)', kg(m.karisimKg) + ' kg · ' + tl(r2(m.karisimTL)))}
+      ${kvRow('Karışım oranı (karışım / et)', pct(m.karisimOran) + '%')}
+      ${kvRow('Marine ağırlık artışı', pct(s.marineArtis) + '%')}
+      ${kvRow('Aylık sabit gider', tl(m.sabit) + ' / ' + kg(s.aylikUretim) + ' kg')}
+      <div class="lbl" style="font-size:calc(16px * var(--s));margin-top:8px">Kemiksiz et = (işlenen malın alış fiyatı + KDV + işçi ödemesi − kanat ve kemik geliri) ÷ çıkan et; kemiksiz gelen mal da ortalamaya girer. Kg maliyet = (göğüs% + but%) × marine et ₺/kg + deri% × deri ₺/kg + kg başı sabit gider.</div>
+    </div>
+  </div>`;
+}
+
+// ---------- Rapor ----------
+function Rapor({ go }) {
+  const [month, setMonth] = useState(today().slice(0, 7));
+  const days = []; const [y, mo] = month.split('-').map(Number);
+  const last = new Date(y, mo, 0).getDate();
+  const end = month === today().slice(0, 7) ? Number(today().slice(8, 10)) : last;
+  for (let d = 1; d <= end; d++) days.push(month + '-' + pad(d));
+  const data = DATA();
+  const series = days.length ? teraziSeries({ doners: S.doners, customers: S.customers, marine: S.marine, sayim: S.sayim, settings: S.settings }, days[days.length - 1]) : {};
+  const workers = {};
+  const donersBy = {}; Object.values(S.doners).forEach(x => { if (x.made && x.source !== 'direkt') (donersBy[x.made] = donersBy[x.made] || []).push(x); });
+  const rows = days.map(d => {
+    const s = settingsFor(d);
+    const partis = partiListOn(data, d);
+    let gir = 0, odeme = 0, et = 0, std = 0;
+    partis.forEach(p => { const c = p.calc; gir += c.girKg; odeme += c.odeme; if (c.stdOk) { et += c.et; std += c.etStd; }
+      c.isciler.forEach(n => { const w = workers[n] = workers[n] || { kazanc: 0, et: 0, std: 0, parti: 0, gun: new Set() }; w.kazanc += c.paylar[n] || 0; w.parti += 1; w.gun.add(d); if (c.stdOk) { w.et += c.et; w.std += c.etStd; } }); });
+    const ds = donersBy[d] || [];
+    const m = ds.length ? costModel(s, kemiksizFor(data, d).val) : null;
+    const maliyet = m ? sumBy(ds, x => x.kg * customerKgCost(donerOran(x, S.customers), m, s)) : 0;
+    const sd = siparisDurum(S.siparis[d], S.doners, S.customers, d, s.siparisTol);
+    const r = series[d];
+    return { d, gir, odeme, fire: std > 0 ? (et - std) / std : null, adet: ds.length, kg: sumBy(ds, x => x.kg), sip: sd.hasOrder ? siparisOzetText(sd) : '', sipBad: sd.hasOrder && (sd.ozet.yapilmadi + sd.ozet.eksik + sd.ozet.fazla + sd.ozet.siparissiz) > 0, fark: r && r.say && r.fark != null ? r.fark : null, maliyet };
+  }).filter(r => r.gir || r.adet || r.fark != null || r.sip);
+  const T = rows.reduce((a, r) => ({ gir: a.gir + r.gir, odeme: a.odeme + r.odeme, adet: a.adet + r.adet, kg: a.kg + r.kg, fark: a.fark + (r.fark || 0), maliyet: a.maliyet + r.maliyet }), { gir: 0, odeme: 0, adet: 0, kg: 0, fark: 0, maliyet: 0 });
+  const wl = Object.entries(workers).sort((a, b) => b[1].kazanc - a[1].kazanc);
+  const sNow = settingsFor(today());
+  const fireCol = f => f == null ? '#475569' : f < -sNow.fireEsik ? '#9A3412' : f > sNow.fireEsik ? '#1E3A8A' : '#0F766E';
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const shiftM = n => { const dt = new Date(y, mo - 1 + n, 1); return dt.getFullYear() + '-' + pad(dt.getMonth() + 1); };
+  return html`<div class="wrap">
+    <${Top} title="Rapor" sub=${months[mo - 1] + ' ' + y} go=${go} right=${html`<div style="display:flex;gap:8px">
+      <button type="button" class="back" aria-label="Önceki ay" onClick=${() => setMonth(shiftM(-1))}>${IBack}</button>
+      <button type="button" class="back" aria-label="Sonraki ay" disabled=${month >= today().slice(0, 7)} onClick=${() => setMonth(shiftM(1))} style="transform:scaleX(-1)">${IBack}</button></div>`}/>
+    <div class="stats">
+      <div class="stat"><small>İşlenen mal</small><b>${kg(T.gir)} kg</b></div>
+      <div class="stat"><small>İşçi ödemesi</small><b>${tl(r2(T.odeme))}</b></div>
+      <div class="stat"><small>Döner</small><b>${T.adet} · ${kg(T.kg)} kg</b></div>
+      <div class="stat"><small>Terazi farkı</small><b style=${'color:' + (T.fark < 0 ? '#9A3412' : '#0F766E')}>${sgn(T.fark, kg)} kg</b></div>
+    </div>
+    ${wl.length ? html`<h2 style="margin-top:4px">İşçiler · kazanç ve fire ortalaması</h2>
+      <div class="tbl"><div class="tr5 head"><span>İşçi</span><span>Gün</span><span>Parti</span><span>Et / standart</span><span>Kazanç</span></div>
+      ${wl.map(([n, w]) => { const f = w.std > 0 ? (w.et - w.std) / w.std : null; return html`<div class="tr5"><span><b>${n}</b></span><span>${w.gun.size}</span><span>${w.parti}</span>
+        <span style=${'font-weight:800;color:' + fireCol(f)}>${f == null ? '—' : sgn(f, pct) + '%'}${f != null && f < -sNow.fireEsik ? html`<small class="pcs" style="color:#9A3412">fazla fire</small>` : ''}</span><span style="font-weight:800">${tl(r2(w.kazanc))}</span></div>`; })}</div>
+      <div class="lbl" style="font-size:calc(16px * var(--s))">Et / standart: işçinin katıldığı partilerde çıkan göğüs+but etinin, o malların standart oranına göre olması gerekene farkı. −%${pct(sNow.fireEsik)}’ten kötüsü “fazla fire” sayılır.</div>` : ''}
+    <h2 style="margin-top:4px">Günler</h2>
+    ${rows.length ? html`<div class="tbl"><div class="tr6 head"><span>Gün</span><span>Mal kg</span><span>Fire</span><span>Döner</span><span>Terazi</span><span>Maliyet</span></div>
+      ${rows.slice().reverse().map(r => html`<div class="tr6"><span><b>${r.d.slice(8, 10)}.${r.d.slice(5, 7)}</b></span><span>${kg(r.gir)}</span>
+        <span style=${'color:' + fireCol(r.fire)}>${r.fire == null ? '—' : sgn(r.fire, pct) + '%'}</span>
+        <span>${r.adet} · ${kg(r.kg)}${r.sip ? html`<small class="pcs" style=${'color:' + (r.sipBad ? '#9A3412' : '#0F766E')}>${r.sip}</small>` : ''}</span>
+        <span style=${'color:' + (r.fark == null ? '#475569' : r.fark < 0 ? '#9A3412' : '#0F766E')}>${r.fark == null ? 'sayım yok' : sgn(r.fark, kg)}</span><span>${tl(Math.round(r.maliyet))}</span></div>`)}</div>`
+      : html`<div class="card"><h2>Bu ay kayıt yok</h2></div>`}
+  </div>`;
+}
+
+// ---------- Oranlar & Fiyatlar ----------
+function Oranlar({ go }) {
+  const t = today();
+  const cur = settingsFor(t);
+  const P = ['kdv', 'kanatOran', 'gogusPay', 'butPay', 'gogusEt', 'butEt', 'marineArtis', 'fireEsik', 'kgKanat', 'kgGogus'];
+  const NUL = ['kgKanat', 'kgGogus'];
+  const toStr = v => String(Math.round(v * 10000) / 10000).replace('.', ',');
+  const init = () => { const d = {}; Object.keys(DEFAULTS).forEach(k => { if (k === 'tarif' || k === 'giderler' || k === 'iscilikMaliyete') return; d[k] = cur[k] == null ? '' : toStr(P.includes(k) ? cur[k] * 100 : cur[k]); });
+    d.iscilikMaliyete = cur.iscilikMaliyete !== false;
+    d.tarif = cur.tarif.map(x => ({ ad: x.ad, kg: toStr(x.kg), fiyat: toStr(x.fiyat) })); d.giderler = cur.giderler.map(x => ({ ad: x.ad, tutar: toStr(x.tutar) })); return d; };
+  const [d, setD] = useState(init);
+  const [busy, setBusy] = useState(false);
+  const F = (k, v) => setD(x => ({ ...x, [k]: v }));
+  const parsed = () => { const o = {}; Object.keys(d).forEach(k => { if (k === 'tarif' || k === 'giderler' || k === 'iscilikMaliyete') return; if (NUL.includes(k) && String(d[k]).trim() === '') { o[k] = null; return; } o[k] = P.includes(k) ? num(d[k]) / 100 : num(d[k]); });
+    o.iscilikMaliyete = d.iscilikMaliyete;
+    o.tarif = d.tarif.filter(x => x.ad.trim() || num(x.kg)).map(x => ({ ad: x.ad.trim(), kg: num(x.kg), fiyat: num(x.fiyat) }));
+    o.giderler = d.giderler.filter(x => x.ad.trim() || num(x.tutar)).map(x => ({ ad: x.ad.trim(), tutar: num(x.tutar) })); return o; };
+  const p = { ...DEFAULTS, ...parsed() };
+  const m = costModel(p);
+  const payErr = Math.abs(p.gogusPay + p.butPay - 1) > 0.0001;
+  const rangeErr = P.some(k => p[k] < 0 || p[k] > 1) || p.siparisTol < 0 || (p.kgKanat != null && p.kgGogus != null && p.kgKanat + p.kgGogus > 1)
+    || ['tavukFiyat', 'aylikUretim', 'partiGogus', 'partiBut'].some(k => !(p[k] > 0)) || p.tarif.some(x => x.kg < 0 || x.fiyat < 0) || p.giderler.some(x => x.tutar < 0);
+  const save = async () => {
+    if (payErr) { toast('Kemikli göğüs + but payı %100 olmalı.'); return; }
+    if (rangeErr) { toast('Bir değer geçersiz: yüzdeler 0–100 arası, fiyat ve üretim 0’dan büyük olmalı.'); return; }
+    setBusy(true);
+    await safe(() => put('settings', t, { ...parsed(), from: t, ts: Date.now() }), 'Kaydedildi · bugünden itibaren geçerli');
+    setBusy(false);
+  };
+  const hist = Object.values(S.settings).filter(x => x.from).sort((a, b) => (a.from < b.from ? 1 : -1));
+  const sec = (title, kids) => html`<div class="card"><h2>${title}</h2>${kids}</div>`;
+  const listEd = (key, cols) => html`${d[key].map((row, i) => html`<div style=${'display:grid;grid-template-columns:minmax(0,2fr) ' + cols.slice(1).map(() => 'minmax(0,1fr)').join(' ') + ' auto;gap:8px;align-items:end'}>
+      ${cols.map(([f, label, isText]) => html`<label class="fld"><span class="lbl" style="font-size:calc(15px * var(--s))">${i === 0 ? label : ''}</span><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(22px * var(--s))" inputmode=${isText ? 'text' : 'decimal'} aria-label=${label} value=${row[f]} onInput=${e => setD(x => ({ ...x, [key]: x[key].map((r, j) => j === i ? { ...r, [f]: e.target.value } : r) }))}/></label>`)}
+      <button type="button" class="del-x" style="height:max(44px, calc(60px * var(--s)))" aria-label="Satırı sil" onClick=${() => setD(x => ({ ...x, [key]: x[key].filter((_, j) => j !== i) }))}>×</button></div>`)}
+    <button type="button" class="btn ghost small" onClick=${() => setD(x => ({ ...x, [key]: [...x[key], Object.fromEntries(cols.map(([f]) => [f, '']))] }))}>+ Satır ekle</button>`;
+  return html`<div class="wrap">
+    <${Top} title="Oranlar & Fiyatlar" sub=${cur.from ? 'Geçerli: ' + fd(cur.from) + ' tarihinden beri' : 'Şu an Excel’deki örnek değerler'} go=${go} back="hesaplar"/>
+    <div class="banner" style="background:#DBEAFE;border-color:#1D4ED8;color:#1E3A8A">Kaydettiğin değerler bugünden itibaren geçerli olur. Geçmiş günlerin fire, ödeme ve maliyetleri o günkü değerlerle kalır.</div>
+    ${sec('Parçalama & fiyat', html`<div class="fgrid">
+      <${Fld} label="Bütün tavuk standart fiyatı" unit="₺/kg" value=${d.tavukFiyat} set=${v => F('tavukFiyat', v)} hint="Mal girişi olmayan günlerde maliyet bununla hesaplanır"/>
+      <${Fld} label="KDV" unit="%" value=${d.kdv} set=${v => F('kdv', v)}/>
+      <${Fld} label="Kanat oranı (gelen tavuğa göre)" unit="%" value=${d.kanatOran} set=${v => F('kanatOran', v)}/>
+      <${Fld} label="Kemikli göğüs payı (gövdeden)" unit="%" value=${d.gogusPay} set=${v => F('gogusPay', v)}/>
+      <${Fld} label="Kemikli but payı (gövdeden)" unit="%" value=${d.butPay} set=${v => F('butPay', v)} hint=${payErr ? 'Göğüs + but payı %100 olmalı' : ''}/>
+      <${Fld} label="Göğüs et oranı (kemikli göğüsten)" unit="%" value=${d.gogusEt} set=${v => F('gogusEt', v)}/>
+      <${Fld} label="But et oranı (kemikli buttan)" unit="%" value=${d.butEt} set=${v => F('butEt', v)}/>
+      <${Fld} label="Kanat satış fiyatı" unit="₺/kg" value=${d.kanatSatis} set=${v => F('kanatSatis', v)}/>
+      <${Fld} label="Kemik satış fiyatı" unit="₺/kg" value=${d.kemikSatis} set=${v => F('kemikSatis', v)}/>
+      <${Fld} label="Deri maliyeti (kendi tavuğundan ise 0)" unit="₺/kg" value=${d.deriMaliyet} set=${v => F('deriMaliyet', v)}/></div>
+      <div class="card" style="background:#F1F5F9;gap:2px">${kvRow('Kemiksiz et verimi', pct(m.verim) + '%')}${kvRow('Kemik + fire', pct(m.kemik) + '%')}${kvRow('Kemiksiz et maliyeti', tl(r2(m.kemiksiz)) + '/kg', true)}</div>`)}
+    ${sec('Mal türü standartları', html`<div class="lbl" style="font-size:calc(17px * var(--s))">1 kg maldan çıkması beklenen. Bütün tavuk, kemikli göğüs ve kemikli but yukarıdaki oranlardan gelir; kemiksiz mal olduğu gibi ete sayılır.</div>
+      <div class="fgrid">
+      <${Fld} label="Kanatlı kemikli göğüs: kanat" unit="%" value=${d.kgKanat} set=${v => F('kgKanat', v)} hint="Boşsa bu malda fire hesaplanmaz"/>
+      <${Fld} label="Kanatlı kemikli göğüs: göğüs eti" unit="%" value=${d.kgGogus} set=${v => F('kgGogus', v)}/></div>
+      <div class="tbl">${MAL.map(x => { const st = malStd(x.id, p); return html`<div class="tr4" style="grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))"><span>${x.ad}</span>${st ? html`<span>${st.kanat ? 'kanat %' + pct(st.kanat) : '—'}</span><span>${st.gogus ? 'göğüs %' + pct(st.gogus) : '—'}</span><span>${st.but ? 'but %' + pct(st.but) : '—'}</span>` : html`<span style="grid-column:span 3;color:#9A3412">girilmedi</span>`}</div>`; })}</div>`)}
+    ${sec('İşçilik ücretleri', html`<div class="lbl" style="font-size:calc(17px * var(--s))">Parçalama yalnız bütün tavukta; kanat ve sıyırma çıkan kiloya göre. Ödeme partide çalışanlara bölünür.</div><div class="fgrid">
+      <${Fld} label="Bütün parçalama (gelen tavuk kg)" unit="₺/kg" value=${d.ucParcalama} set=${v => F('ucParcalama', v)}/>
+      <${Fld} label="Göğüs sıyırma (çıkan et kg)" unit="₺/kg" value=${d.ucGogus} set=${v => F('ucGogus', v)}/>
+      <${Fld} label="But sıyırma (çıkan et kg)" unit="₺/kg" value=${d.ucBut} set=${v => F('ucBut', v)}/>
+      <${Fld} label="Kanat (çıkan kanat kg)" unit="₺/kg" value=${d.ucKanat} set=${v => F('ucKanat', v)}/></div>
+      <button type="button" class=${'btn small ' + (d.iscilikMaliyete ? '' : 'ghost')} aria-pressed=${d.iscilikMaliyete} onClick=${() => F('iscilikMaliyete', !d.iscilikMaliyete)}>${d.iscilikMaliyete ? '✓ İşçilik kg maliyetine dahil' : 'İşçilik kg maliyetine dahil değil'}</button>
+      <div class="lbl" style="font-size:calc(16px * var(--s))">İşçilik payı: ${tl(r2(m.iscilikEt))} / kg kemiksiz et</div>`)}
+    ${sec('Marinasyon tarifi', html`<div class="fgrid">
+      <${Fld} label="Parti çiğ göğüs" unit="kg" value=${d.partiGogus} set=${v => F('partiGogus', v)}/>
+      <${Fld} label="Parti çiğ but" unit="kg" value=${d.partiBut} set=${v => F('partiBut', v)}/>
+      <${Fld} label="Parti deri" unit="kg" value=${d.partiDeri} set=${v => F('partiDeri', v)}/>
+      <${Fld} label="Marine ağırlık artışı" unit="%" value=${d.marineArtis} set=${v => F('marineArtis', v)}/></div>
+      <div class="lbl">Karışım malzemeleri (fiyatlar ayrı ayrı değişir)</div>
+      ${listEd('tarif', [['ad', 'Malzeme', true], ['kg', 'kg'], ['fiyat', '₺/kg']])}
+      <div class="card" style="background:#F1F5F9;gap:2px">${kvRow('Toplam karışım', kg(m.karisimKg) + ' kg · ' + tl(r2(m.karisimTL)))}${kvRow('Karışım oranı (karışım / et)', pct(m.karisimOran) + '%')}${kvRow('Marine et maliyeti', tl(r2(m.marineMaliyet)) + '/kg', true)}</div>`)}
+    ${sec('Aylık sabit giderler', html`${listEd('giderler', [['ad', 'Gider', true], ['tutar', '₺/ay']])}
+      <div class="fgrid"><${Fld} label="Aylık üretim (kg döner)" unit="kg" value=${d.aylikUretim} set=${v => F('aylikUretim', v)}/></div>
+      <div class="card" style="background:#F1F5F9;gap:2px">${kvRow('Toplam sabit gider', tl(m.sabit))}${kvRow('Kg başına sabit gider', tl(r2(m.kgSabit)), true)}</div>`)}
+    ${sec('Kontrol eşikleri', html`<div class="fgrid">
+      <${Fld} label="Terazi toleransı" unit="kg" value=${d.tolerans} set=${v => F('tolerans', v)}/>
+      <${Fld} label="Fire uyarı eşiği (standarttan sapma)" unit="%" value=${d.fireEsik} set=${v => F('fireEsik', v)}/>
+      <${Fld} label="Sipariş toleransı (döner başına)" unit="kg" value=${d.siparisTol} set=${v => F('siparisTol', v)} hint="Bu kadar kilo farkı Tam sayılır"/></div>`)}
+    <button type="button" class="btn" style="min-height:max(44px, calc(92px * var(--s)));font-size:calc(30px * var(--s));position:sticky;bottom:12px;box-shadow:0 6px 20px rgba(15,23,42,.25)" disabled=${busy || payErr || rangeErr} onClick=${save}>${rangeErr ? 'Geçersiz değer var' : payErr ? 'Göğüs + but payı %100 olmalı' : 'KAYDET (bugünden geçerli)'}</button>
+    ${hist.length ? html`<div class="lbl">Kayıtlı ayar tarihleri: ${hist.map(h => fd(h.from)).join(' · ')}</div>` : ''}
+  </div>`;
+}
+
+// ---------- Tedarikçi defteri ----------
+function Tedarik({ go }) {
+  const [day, setDay] = useState(today());
+  const all = Object.entries(S.tedarik).map(([id, x]) => ({ id, ...x }));
+  const firms = [...new Set(['Nur Döner', ...all.map(x => x.firma).filter(Boolean)])];
+  const [firma, setFirma] = useState(firms[0]);
+  const [yeni, setYeni] = useState('');
+  const [f, setF] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const flist = [...new Set([...firms, firma])];
+  const mine = all.filter(x => x.firma === firma);
+  const gun = mine.filter(x => x.date === day).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const og = tedarikOzet(gun), ot = tedarikOzet(mine);
+  const ay = day.slice(0, 7); const byDay = {};
+  mine.filter(x => x.date.slice(0, 7) === ay).forEach(x => { (byDay[x.date] = byDay[x.date] || []).push(x); });
+  const TUR = { deri: ['Deri aldık', 'kg', '#B45309'], iscilik: ['Döner işçiliği', 'kg döner', '#1E3A8A'], malzeme: ['Malzeme aldık', 'adet/kg', '#0E7490'], odeme: ['Ödeme yaptık', '', '#0F766E'] };
+  const lastOf = (tur, ad) => mine.filter(x => x.tur === tur && (tur !== 'malzeme' || x.ad === ad)).sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+  const open = tur => { const l = tur === 'malzeme' || tur === 'odeme' ? null : lastOf(tur); setF({ tur, ad: '', miktar: '', fiyat: l && l.fiyat ? String(l.fiyat).replace('.', ',') : '', tutar: '', not: '' }); };
+  const FF = (k, v) => setF(x => ({ ...x, [k]: v }));
+  const malzemeler = [...new Set(mine.filter(x => x.tur === 'malzeme' && x.ad).map(x => x.ad))].slice(-10);
+  const tutarOf = x => (x.tur === 'odeme' ? r2(num(x.tutar)) : r2(num(x.miktar) * num(x.fiyat)));
+  const save = async () => {
+    const t = tutarOf(f), m = num(f.miktar);
+    if (f.tur === 'odeme') { if (!(t > 0)) { toast('Ödeme tutarını gir.'); return; } }
+    else { if (!(m > 0)) { toast('Miktarı gir.'); return; } if (f.tur === 'malzeme' && !f.ad.trim()) { toast('Malzemenin adını yaz.'); return; } if (f.tur !== 'deri' && !(num(f.fiyat) > 0)) { toast('Birim fiyatı gir.'); return; } }
+    setBusy(true);
+    const rec = { date: day, firma, tur: f.tur, tutar: t, ts: Date.now() };
+    if (f.tur !== 'odeme') { rec.miktar = Math.round(m * 1000) / 1000; rec.fiyat = r2(num(f.fiyat)); }
+    if (f.tur === 'malzeme') rec.ad = f.ad.trim();
+    if (f.not.trim()) rec.not = f.not.trim();
+    const ok = await safe(() => put('tedarik', genId(), rec), TUR[f.tur][0] + ' kaydedildi · ' + tl(t));
+    if (ok) setF(null);
+    setBusy(false);
+  };
+  const del = async x => { if (confirmDel !== x.id) { setConfirmDel(x.id); return; } setConfirmDel(null); await safe(() => removeDoc('tedarik', x.id), 'Kayıt silindi'); };
+  const satir = x => x.tur === 'odeme' ? 'Ödeme yaptık' : x.tur === 'deri' ? 'Deri · ' + kgA(x.miktar) + ' kg' + (x.fiyat ? ' × ' + tl(x.fiyat) : '') : x.tur === 'iscilik' ? 'Döner işçiliği · ' + kgA(x.miktar) + ' kg × ' + tl(x.fiyat) : x.ad + ' · ' + nf2.format(x.miktar) + ' × ' + tl(x.fiyat);
+  return html`<div class="wrap">
+    <${Top} title="Tedarikçi" sub=${fd(day) + ' · ' + firma + ' · gün toplamı ' + tl(og.alim)} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
+    <div class="chips">${flist.map(n => html`<button type="button" class=${'btn small ' + (n === firma ? 'purple' : 'ghost')} aria-pressed=${n === firma} onClick=${() => setFirma(n)}>${n}</button>`)}
+      <span style="display:flex;gap:6px;flex:1;min-width:200px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni firma adı" placeholder="Yeni firma adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
+      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setFirma(yeni.trim()); setYeni(''); } }}>Ekle</button></span></div>
+    <div class="stat" style="background:#FFF7ED;outline:2px solid #FDBA74"><small style="color:#7C2D12">${firma} firmasına borcumuz (tüm alımlar − ödemeler)</small><b style="color:#C2410C;font-size:calc(44px * var(--s))">${tl(ot.bakiye)}</b></div>
+    <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][2]} onClick=${() => open(t)}>+ ${TUR[t][0]}</button>`)}</div>
+    <div class="stats">
+      <div class="stat"><small>Deri (bugün)</small><b>${kg(og.deriKg)} kg</b>${og.deriTL ? html`<small>${tl(og.deriTL)}</small>` : ''}</div>
+      <div class="stat"><small>İşçilik</small><b>${tl(og.iscilikTL)}</b><small>${kg(og.iscilikKg)} kg döner</small></div>
+      <div class="stat"><small>Malzeme</small><b>${tl(og.malzemeTL)}</b></div>
+      <div class="stat"><small>Gün toplamı</small><b style="color:#C2410C">${tl(og.alim)}</b>${og.odeme ? html`<small>ödenen ${tl(og.odeme)}</small>` : ''}</div>
+    </div>
+    ${gun.length ? gun.map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b>${x.not ? html`<small>${x.not}</small>` : ''}</span>
+      <span style="display:flex;align-items:center;gap:8px"><span class=${'amt ' + (x.tur === 'odeme' ? 'minus' : 'plus')}>${x.tur === 'deri' && !x.tutar ? 'bedelsiz' : (x.tur === 'odeme' ? '−' : '+') + tl(x.tutar)}</span>
+      <button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></span></div>`)
+      : html`<div class="card"><div class="lbl">Bu gün ${firma} için kayıt yok. Aldığınız deriyi, ödediğiniz döner işçiliğini ve malzemeleri girin; günlük toplam ve borç kendiliğinden hesaplanır. Firmanın fişiyle karşılaştırın.</div></div>`}
+    ${Object.keys(byDay).length ? html`<h2 style="margin-top:4px">Bu ay gün gün</h2>
+      <div class="tbl"><div class="tr5 head"><span>Gün</span><span>Deri kg</span><span>İşçilik</span><span>Malzeme</span><span>Toplam</span></div>
+      ${Object.keys(byDay).sort().reverse().map(d => { const o = tedarikOzet(byDay[d]); return html`<div class="tr5"><span><b>${d.slice(8, 10)}.${d.slice(5, 7)}</b></span><span>${kg(o.deriKg)}</span><span>${tl(o.iscilikTL)}<small class="pcs">${kg(o.iscilikKg)} kg</small></span><span>${tl(o.malzemeTL)}</span><span style="font-weight:800;color:#C2410C">${tl(o.alim)}</span></div>`; })}</div>` : ''}
+    ${f ? html`<${Modal} close=${() => setF(null)}>
+      <h2>${TUR[f.tur][0]} · ${firma}</h2><div class="lbl">${fd(day)}</div>
+      ${f.tur === 'malzeme' ? html`<${Fld} label="Malzeme adı" value=${f.ad} set=${v => FF('ad', v)} text=${true}/>
+        ${malzemeler.length ? html`<div class="chips">${malzemeler.map(n => html`<button type="button" class="btn ghost small" onClick=${() => { const l = lastOf('malzeme', n); setF(x => ({ ...x, ad: n, fiyat: l && l.fiyat ? String(l.fiyat).replace('.', ',') : x.fiyat })); }}>${n}</button>`)}</div>` : ''}` : ''}
+      ${f.tur === 'odeme' ? html`<${Fld} label="Ödenen tutar" unit="₺" value=${f.tutar} set=${v => FF('tutar', v)}/>` : html`<div class="fgrid">
+        <${Fld} label=${f.tur === 'deri' ? 'Deri' : f.tur === 'iscilik' ? 'İşçiliği yapılan döner' : 'Miktar'} unit=${f.tur === 'malzeme' ? '' : 'kg'} value=${f.miktar} set=${v => FF('miktar', v)}/>
+        <${Fld} label=${f.tur === 'deri' ? 'Kilo fiyatı (bedelsizse boş)' : 'Birim fiyat'} unit="₺" value=${f.fiyat} set=${v => FF('fiyat', v)}/></div>
+        <div class="card" style="background:#F1F5F9">${kvRow('Tutar', tl(tutarOf(f)), true)}</div>`}
+      <${Fld} label="Not (isteğe bağlı)" value=${f.not} set=${v => FF('not', v)} text=${true}/>
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setF(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Uygulama ----------
+const VIEWS = ['ana', 'siparis', 'uretim', 'kontrol', 'stok', 'teslimat', 'mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'maliyet', 'rapor', 'oranlar', 'pin'];
+const ALIAS = { liste: 'siparis', kesim: 'mal', hesaplar: 'maliyet' };
+const LOCKED = ['mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'maliyet', 'rapor', 'oranlar', 'pin'];
+function App() {
+  useStore();
+  const pick = () => { let h = (location.hash || '').slice(1); h = ALIAS[h] || h; return VIEWS.includes(h) ? h : 'ana'; };
+  const [view, setView] = useState(pick);
+  useEffect(() => { const f = () => setView(pick()); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f); }, []);
+  const go = v => { v = ALIAS[v] || v; if (isUnlocked()) UI.unlockedAt = Date.now(); setView(v); try { location.hash = v === 'ana' ? '' : v; } catch (e) {} try { scrollTo(0, 0); } catch (e) {} };
+  UI.view = view === 'para' ? 'defter' : view;
+  const ready = S.mode === 'demo' || (S.mode === 'live' && COLS.every(c => S.loaded[c]));
+  let body;
+  if (S.mode === 'login') body = html`<${Login}/>`;
+  else if (!ready) body = html`<div class="wrap"><div class="boot">Yükleniyor…</div>${S.note ? html`<div class="banner">${S.note}</div>` : ''}</div>`;
+  else {
+    const V = { ana: Ana, siparis: Siparis, uretim: Uretim, kontrol: Kontrol, stok: Stok, teslimat: Teslimat, mal: Mal, marine: Marine, sayim: Sayim, defter: Defter, para: Defter, musteriler: Musteriler, tedarik: Tedarik, maliyet: Maliyet, rapor: Rapor, oranlar: Oranlar }[view];
+    if (LOCKED.includes(view) && !isUnlocked()) body = html`<${PinGate} key=${'gate-' + view} go=${go} onOk=${emit}/>`;
+    else if (view === 'pin') body = html`<${PinGate} key="pin-change" go=${go} change=${true} onOk=${() => go('ana')}/>`;
+    else body = html`<${V} key=${view} go=${go} pay=${view === 'para'}/>`;
+  }
+  return html`
+    ${S.mode === 'demo' ? html`<div class="wrap" style="padding-bottom:0"><div class="banner">${DENEME ? 'Deneme sürümü: örnek verilerle çalışır. Yaptıkların kaydedilmez, sayfa yenilenince sıfırlanır. Kilitli bölümlerin PIN’i: 1234' : 'Deneme modu: Supabase bağlantısı ayarlanmamış, veriler kaydedilmiyor.'}</div></div>` : ''}
+    ${ready && S.note ? html`<div class="wrap" style="padding-bottom:0"><div class="banner">${S.note}</div></div>` : ''}
+    ${body}
+    ${S.toast ? html`<div class="toast" role="status">${S.toast}</div>` : ''}`;
+}
+
+applyScale();
+render(html`<${App}/>`, document.getElementById('app'));
+init();
+</script>
+</body>
+</html>
