@@ -252,7 +252,7 @@ function costModel(s, kemiksizGercek) {
   const sabit = sumBy(s.giderler, x => x.tutar);
   const kgSabit = s.aylikUretim > 0 ? sabit / s.aylikUretim : 0;
   const ortDoner = marineKg + s.partiDeri > 0 ? (partiEt * kemiksiz + karisimTL + s.partiDeri * s.deriMaliyet) / (marineKg + s.partiDeri) + kgSabit : 0;
-  return { verim, kemik, gEt, bEt, iscilikTavuk, iscilikEt, kemiksiz, karisimKg, karisimTL, karisimOran, partiEt, marineKg, marineMaliyet, sabit, kgSabit, ortDoner };
+  return { verim, kemik, gEt, bEt, iscilikTavuk, iscilikEt, kemiksiz, kemiksizStd, karisimKg, karisimTL, karisimOran, partiEt, marineKg, marineMaliyet, sabit, kgSabit, ortDoner };
 }
 // Müşteri kg maliyeti = (göğüs% + but%) × marine et ₺/kg + deri% × deri ₺/kg + kg başı sabit gider
 function customerKgCost(c, m, s) {
@@ -380,10 +380,12 @@ function partiCalc(p, s) {
   const paylar = elle ? Object.fromEntries(isciler.map(n => [n, Number(p.paylar[n]) || 0])) : esitBol(odemeHesap, isciler);
   const odeme = isciler.length ? r2(isciler.reduce((a, n) => a + paylar[n], 0)) : odemeHesap;
   const et = cik.gogus + cik.but, etStd = std.gogus + std.but;
+  const bekle = { gogus: gir.some(g => /^(butun|kanatliGogus|kemikliGogus|kemiksizGogus)$/.test(g.tur)), but: gir.some(g => /^(butun|kemikliBut|kemiksizBut)$/.test(g.tur)) };
+  const eksik = ['gogus', 'but'].filter(k => bekle[k] && !(cik[k] > 0));
   const etOran = stdOk && etStd > 0 ? (et - etStd) / etStd : null;
-  const durum = etOran == null ? 'stdYok' : etOran < -s.fireEsik ? 'fazla' : etOran > s.fireEsik ? 'yuksek' : 'normal';
+  const durum = eksik.length ? 'eksik' : etOran == null ? 'stdYok' : etOran < -s.fireEsik ? 'fazla' : etOran > s.fireEsik ? 'yuksek' : 'normal';
   const fark = { kanat: cik.kanat - std.kanat, gogus: cik.gogus - std.gogus, but: cik.but - std.but };
-  return { gir, girKg, butunKg, cik, std, stdOk, fark, odemeHesap, odeme, paylar, elle, isciler, et, etStd, etFark: et - etStd, etOran, durum, kemik: Math.max(0, girKg - cik.kanat - et) };
+  return { gir, girKg, butunKg, cik, std, stdOk, eksik, fark, odemeHesap, odeme, paylar, elle, isciler, et, etStd, etFark: et - etStd, etOran, durum, kemik: Math.max(0, girKg - cik.kanat - et) };
 }
 // Tarihe göre gruplama (aynı nesne için bir kez hesaplanır)
 const _grp = new WeakMap();
@@ -413,12 +415,19 @@ function malPrice(mal, tur, day) {
   g[best].forEach(x => { if (x.tur === tur && x.kg > 0) { kg += x.kg; tl += x.kg * (Number(x.fiyat) || 0); } });
   return kg > 0 ? tl / kg : null;
 }
+// Çıkan eti eksik girilmiş partiler (son n gün)
+function eksikPartiler(data, day, n) {
+  const out = [];
+  for (let i = 0, d = day; i <= (n == null ? 30 : n); i++, d = shiftDay(d, -1)) partiListOn(data, d).forEach(p => { if (p.calc.eksik.length) out.push({ day: d, id: p.id, eksik: p.calc.eksik }); });
+  return out;
+}
 // O günün gerçek kemiksiz et maliyeti (₺/kg): işlenen malın alış fiyatı + KDV + işçilik − kanat/kemik geliri, çıkan ete bölünür.
 // Kemiksiz gelen mal işçiliksiz olarak aynı ortalamaya girer.
 function etCostOn(data, day) {
   const s = settingsOn(data.settings, day);
   let tl = 0, et = 0, eksik = false;
   partiListOn(data, day).forEach(p => {
+    if (p.calc.eksik.length) return; // çıkan göğüs/but girilmemiş: maliyeti bozmasın
     p.calc.gir.forEach(g => {
       let f = malPrice(data.mal, g.tur, day);
       if (f == null) { if (g.tur === 'butun') f = s.tavukFiyat; else { eksik = true; f = 0; } }
@@ -1591,7 +1600,7 @@ function PinGate({ go, onOk, change }) {
 
 // ---------- Mal girişi & iş partileri ----------
 function Mal({ go }) {
-  const [day, setDay] = useState(today());
+  const [day, setDay] = useState(() => { const d = UI.malDay; UI.malDay = null; return d || today(); });
   const [mf, setMf] = useState(null);
   const [pf, setPf] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
@@ -1661,11 +1670,12 @@ function Mal({ go }) {
     setBusy(true);
     const id = pf.id || genId(); const old = pf.id ? S.parti[pf.id] : null;
     const rec = { ...r, ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
-    const ok = await safe(() => put('parti', id, rec), 'İş partisi kaydedildi · ödeme ' + tl(partiCalc(r, s).odeme));
+    const pc = partiCalc(r, s);
+    const ok = await safe(() => put('parti', id, rec), pc.eksik.length ? 'Kaydedildi, ama çıkan ' + pc.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join(' ve ') + ' girilmedi. Girene kadar bu parti maliyete katılmaz.' : 'İş partisi kaydedildi · ödeme ' + tl(pc.odeme));
     if (ok) setPf(null);
     setBusy(false);
   };
-  const durumTag = c => c.durum === 'stdYok' ? ['Standart girilmedi', '#334155', '#F1F5F9'] : c.durum === 'fazla' ? ['Fazla fire: et ' + sgn(c.etOran, pct) + '%', '#9A3412', '#FFF7ED'] : c.durum === 'yuksek' ? ['Standarttan fazla et: ' + sgn(c.etOran, pct) + '%', '#1E3A8A', '#DBEAFE'] : ['Normal: et ' + sgn(c.etOran, pct) + '%', '#134E4A', '#F0FDFA'];
+  const durumTag = c => c.durum === 'eksik' ? ['Çıkan ' + c.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join(' ve ') + ' girilmedi', '#B91C1C', '#FEE2E2'] : c.durum === 'stdYok' ? ['Standart girilmedi', '#334155', '#F1F5F9'] : c.durum === 'fazla' ? ['Fazla fire: et ' + sgn(c.etOran, pct) + '%', '#9A3412', '#FFF7ED'] : c.durum === 'yuksek' ? ['Standarttan fazla et: ' + sgn(c.etOran, pct) + '%', '#1E3A8A', '#DBEAFE'] : ['Normal: et ' + sgn(c.etOran, pct) + '%', '#134E4A', '#F0FDFA'];
   const partRow = (label, c, p) => (c.cik[p] > 0 || c.std[p] > 0 ? html`<div class="tr3"><span>${label}</span><span>${kg(c.cik[p])}</span><span class="muted">${c.stdOk ? kg(c.std[p]) : '—'}</span><span style=${'color:' + (!c.stdOk ? '#475569' : c.fark[p] < 0 ? '#9A3412' : '#0F766E')}>${c.stdOk ? sgn(c.fark[p], kg) : '—'}</span></div>` : '');
   const allNames = pf ? [...new Set([...names, ...pf.isciler])] : [];
   const kalanTxt = m => { const g = geldi[m.id] || 0, i = islendi[m.id] || 0; return !m.is ? 'marinasyona hazır' : g - i > 0.05 ? kg(g - i) + ' kg bekliyor' : i - g > 0.05 ? kg(i - g) + ' kg önceki günden' : 'hepsi işlendi'; };
@@ -1867,11 +1877,14 @@ function Maliyet({ go }) {
   const kf = kemiksizFor(DATA(), t);
   const m = costModel(s, kf.val);
   const cs = custList();
-  const kaynak = kf.src === 'gercek' ? 'bugünkü alımlar ve çıkan etten' : kf.src === 'onceki' ? fd(kf.date) + ' günü alımlarından (bugün işlenen mal yok)' : 'Oranlar ekranındaki standart fiyattan (son 30 günde mal girişi yok)';
+  const eks = eksikPartiler(DATA(), t, 30);
+  const kaynak = kf.src === 'gercek' ? 'bugünkü alımlar ve çıkan etten' : kf.src === 'onceki' ? fd(kf.date) + ' günü alımlarından (bugün tamamlanmış parti yok)' : 'Oranlar ekranındaki standart fiyattan (son 30 günde tamamlanmış parti yok)';
   return html`<div class="wrap">
     <${Top} title="Maliyet & Kâr" sub=${'Bugün · kemiksiz et ' + tl(r2(m.kemiksiz)) + '/kg'} go=${go}/>
     ${exampleBanner(s)}
     <div class="banner" style="background:#DBEAFE;border-color:#1D4ED8;color:#1E3A8A">Kemiksiz et maliyeti: ${kaynak}.</div>
+    ${eks.length ? html`<div class="banner" style="background:#FEE2E2;border-color:#B91C1C;color:#7F1D1D">${eks.map(x => fd(x.day) + ' partisinde çıkan ' + x.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join(' ve ')).join(' · ')} girilmemiş. ${eks.length > 1 ? 'Bu partiler' : 'Bu parti'} maliyete katılmadı. Et ekranında partiyi “Düzelt” ile tamamla, maliyet kendiliğinden düzelir.
+      <button type="button" class="btn small" style="margin-top:8px" onClick=${() => { UI.malDay = eks[0].day; go('mal'); }}>Partiyi aç</button></div>` : ''}
     <div class="stats">
       <div class="stat"><small>Kemiksiz et</small><b>${tl(r2(m.kemiksiz))}/kg</b></div>
       <div class="stat"><small>Marine et</small><b>${tl(r2(m.marineMaliyet))}/kg</b></div>
