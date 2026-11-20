@@ -34,6 +34,8 @@ h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
 .two{display:flex;gap:24px;align-items:flex-start}
 .side{width:calc(300px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
 .side.w400{width:calc(400px * var(--s))} /* tablo taşıyan sol sütun (Sayım) */
+/* Geniş ama dar sağ sütunlu düzen (iç ekran 700-900 px): Defter ekstre tablosu 390 px'e sığsın */
+@media (min-width:700px) and (max-width:900px){html[data-layout=wide] .main .tr4{font-size:calc(19px * var(--s));padding:8px 8px;gap:4px}html[data-layout=wide] .main .stats{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-layout=wide] .main .tbl{overflow-x:auto}}
 /* Düzen: Fold 8 Ultra iç ekranı tarayıcıya 752×749 px bildirir (ölçek 1, kareye yakın) → iki sütun: sol 300 px seçim, sağ ≈390 px giriş.
    Sütun/üst-alt kararı JS'te verilir (html[data-layout]); media query kullanılmaz ki adres çubuğu gizlenince yükseklik değişse de düzen zıplamasın. */
 @media (min-width:1000px){.side{width:calc(360px * var(--s))}.two{gap:22px}.tiles .tile{min-height:calc(230px * var(--s))}.stats{gap:14px}.modal{width:min(760px,100%)}}
@@ -148,6 +150,9 @@ html[data-fit=tight] .part b{font-size:calc(30px * var(--s))}
 html[data-fit=tight] .stat{padding:10px 14px}
 html[data-fit=tight] h1{font-size:calc(34px * var(--s))}
 html[data-fit=tight] .top{gap:12px}
+html[data-fit=tight] .tiles .tile{min-height:calc(126px * var(--s));padding:14px 16px;font-size:calc(28px * var(--s))}
+html[data-fit=tight] .tile small{font-size:calc(18px * var(--s));margin-top:2px} /* ana sayfa iç ekranda kaydırmadan sığsın */
+html[data-fit=tight] .tiles{gap:10px}
 /* Sıkı düzende sağ sütun (giriş) hiç kırpılmaz; uzun sol liste sınırlı yükseklikte kendi içinde kayar. 180 px ≈ başlık + sekmeler + boşluklar. */
 html[data-fit=tight] .wrap{padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px))}
 html[data-fit=tight] .two>.side{max-height:calc(100dvh - 180px);overflow:auto;overscroll-behavior:contain}
@@ -1624,7 +1629,7 @@ function Defter({ go, pay }) {
     <${Top} title=${mode === 'para' ? 'Para Al' : mode === 'ekstre' ? 'Ekstre' : 'Müşteri Defteri'} go=${go}/>
     <div class="two">
       <div class="side">
-        <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74"><small style="color:#7C2D12">Toplam alacak</small><b style="color:#C2410C;font-size:calc(38px * var(--s))">${tl(total)}</b></div>
+        <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74"><small style="color:#7C2D12">Toplam alacak</small><b style="color:#C2410C;font-size:calc(30px * var(--s))">${tl(total)}</b></div>
         <input class="big" style="height:max(44px, calc(58px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Müşteri ara" placeholder="Ara: ad ya da kod" value=${q} onInput=${e => setQ(e.target.value)}/>
         <div class="seg" role="group" aria-label="Sıralama">${[['kod', 'Kod'], ['borc', 'Borç'], ['ekstre', ekstreN ? 'Ekstre · ' + ekstreN : 'Ekstre']].map(([k, l]) => html`<button type="button" class=${'btn small ' + (sort === k ? (k === 'ekstre' && ekstreN ? 'orange' : '') : 'ghost')} aria-pressed=${sort === k} style="min-height:max(44px, calc(52px * var(--s) * var(--v)));font-size:calc(18px * var(--s))" onClick=${() => setSort(k)}>${l}</button>`)}</div>
         ${listed.length ? listed.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s) * var(--v)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); setLim(12); if (mode === 'ekstre') setMode('detay'); }}>
@@ -1635,7 +1640,7 @@ function Defter({ go, pay }) {
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${c.kodsuz ? c.name : code + ' · ' + c.name}${c.kisi || c.faturaAdi || c.telefon ? html`<small style="display:block;font-size:calc(17px * var(--s));font-weight:600;color:#475569">${[c.kisi, c.telefon, c.faturaAdi ? 'Fatura: ' + c.faturaAdi : ''].filter(Boolean).join(' · ')}</small>` : ''}</h2>
           <span class="lbl">${headSub}</span></div>
         ${mode === 'detay' ? html`
-          <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74;padding:18px 22px"><small style="color:#7C2D12">Bize borcu</small><b style="color:#C2410C;font-size:calc(62px * var(--s));letter-spacing:-1px">${tl(bal)}</b></div>
+          <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74;padding:18px 22px"><small style="color:#7C2D12">Bize borcu</small><b style="color:#C2410C;font-size:calc(48px * var(--s));letter-spacing:-1px">${tl(bal)}</b></div>
           <div class="grid2">
             <button type="button" class="btn orange" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${openMal}>+ KANAT / TAVUK</button>
             <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${() => { setVal(''); setMode('para'); }}>− PARA ALDIM</button>
