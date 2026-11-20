@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.m42ai.fabrika",
+    "sha256_cert_fingerprints": ["B9:4C:87:19:F3:11:30:D5:DA:EB:13:39:F6:83:E4:D7:82:2C:0A:1E:D5:08:02:AD:DC:82:90:59:F1:15:F6:7B"]
+  }
+}]
