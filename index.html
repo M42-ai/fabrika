@@ -1357,10 +1357,13 @@ async function compressImage(file) {
 async function dropAsset(id) { if (id && sb && String(id).startsWith('sb:')) { try { await sb.storage.from('fis').remove([String(id).slice(3)]); } catch (e) {} } }
 
 function Teslimat({ go }) {
+  // Sol: bekleyen dönerler (seçilebilir). Sağ: seçili dönerin tartısı, etiket fotoğrafı, teslim. Pencere sadece fotoğraf büyütmede.
+  const [sel, setSel] = useState(null);
+  const [valFor, setValFor] = useState({ id: null, val: '' });
+  const [uploading, setUploading] = useState(false);
+  const [force, setForce] = useState(null);     // eksik uyarısı görülen döner id
   const [busy, setBusy] = useState({});
   const [confirmUndo, setConfirmUndo] = useState(null);
-  const [tart, setTart] = useState(null);
-  const [ask, setAsk] = useState(null);
   const [big, setBig] = useState(null);
   const t = today();
   const ds = donerList();
@@ -1369,135 +1372,130 @@ function Teslimat({ go }) {
   const verilen = ds.filter(d => d.status === 'teslim' && d.deliveredAt === t).sort(sortT);
   const mark = (id, v) => setBusy(b => ({ ...b, [id]: v }));
   const canPhoto = S.mode === 'demo' || S.mode === 'live';
-
-  const openTart = d => { const cur = S.doners[d.id]; if (!cur) return; setTart({ id: d.id, val: cur.actualKg != null ? String(cur.actualKg).replace('.', ',') : '', photoId: cur.photoId || null, newPhoto: null, uploading: false }); };
+  const id = sel && bekleyen.some(d => d.id === sel) ? sel : bekleyen[0] ? bekleyen[0].id : null;
+  const cur = id ? S.doners[id] : null;
+  const val = cur ? (valFor.id === id ? valFor.val : cur.actualKg != null ? String(cur.actualKg).replace('.', ',') : '') : '';
+  const setVal = v => setValFor({ id, val: v });
+  const n = numOf(val);
+  const dirty = cur && n > 0 && Math.round(n * 1000) / 1000 !== cur.actualKg;
   const onPhoto = async e => {
     const f = e.target.files && e.target.files[0]; e.target.value = '';
-    if (!f) return;
-    setTart(x => ({ ...x, uploading: true }));
+    if (!f || !cur) return;
+    const did = id; setUploading(true);
     try {
       const blob = await compressImage(f);
-      let id;
+      let pid;
       if (S.mode === 'live') {
         const path = today().slice(0, 7) + '/' + genId() + '.jpg';
         const { error } = await sb.storage.from('fis').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
         if (error) throw error;
-        id = 'sb:' + path;
-      } else id = URL.createObjectURL(blob);
-      setTart(x => { if (x && x.newPhoto) dropAsset(x.newPhoto); return x ? { ...x, uploading: false, photoId: id, newPhoto: id } : x; });
+        pid = 'sb:' + path;
+      } else pid = URL.createObjectURL(blob);
+      const c = S.doners[did];
+      if (c && c.status === 'yolda') {
+        const old = c.photoId;
+        const ok = await safe(() => put('doners', did, { ...c, photoId: pid }), 'Etiket fotoğrafı kaydedildi');
+        if (ok && old && old !== pid) dropAsset(old); else if (!ok) dropAsset(pid);
+      } else dropAsset(pid);
     } catch (err) {
-      setTart(x => (x ? { ...x, uploading: false } : x));
-      const c = err && err.code;
       toast(!navigator.onLine ? 'İnternet yok, fotoğraf yüklenemedi.' : 'Fotoğraf yüklenemedi, tekrar dene.');
     }
+    setUploading(false);
   };
-  const cancelTart = () => { const x = tart; setTart(null); if (x && x.newPhoto) dropAsset(x.newPhoto); };
+  // Tartıyı yazar; başarıda güncel döner kaydını döndürür
   const saveTart = async () => {
-    const x = tart; if (!x || x.uploading) return;
-    const n = numOf(x.val); const cur = S.doners[x.id];
-    if (!cur || cur.status !== 'yolda') { setTart(null); return; }
-    if (n <= 0) { toast('Tartılan kiloyu gir.'); return; }
-    if (n > 200) { toast('Bir döner 200 kg’dan büyük olamaz.'); return; }
-    const rec = { ...cur, actualKg: Math.round(n * 1000) / 1000, weighedAt: t };
-    if (x.photoId) rec.photoId = x.photoId;
-    const ok = await safe(() => put('doners', x.id, rec), cur.target + ' · tartılan ' + kgA(rec.actualKg) + ' kg kaydedildi');
-    if (ok) { setTart(null); if (cur.photoId && cur.photoId !== x.photoId) dropAsset(cur.photoId); }
+    const c = S.doners[id]; if (!c || c.status !== 'yolda') return null;
+    if (n <= 0) { toast('Tartılan kiloyu gir.'); return null; }
+    if (n > 200) { toast('Bir döner 200 kg’dan büyük olamaz.'); return null; }
+    const rec = { ...c, actualKg: Math.round(n * 1000) / 1000, weighedAt: t };
+    const ok = await safe(() => put('doners', id, rec), c.target + ' · tartılan ' + kgA(rec.actualKg) + ' kg kaydedildi');
+    return ok ? rec : null;
   };
-
-  const teslim = async (d, force) => {
-    if (busy[d.id]) return;
-    const cur = S.doners[d.id]; if (!cur || cur.status !== 'yolda') return;
-    if ((cur.actualKg == null || (canPhoto && !cur.photoId)) && !force) { setAsk(d.id); return; }
-    setAsk(null);
-    const ch = deliveryCharge(cur, S.customers, t);
-    if (ch.error) { toast(ch.error + '. Müşteriler ekranından fiyat gir.'); return; }
-    mark(d.id, true);
+  const teslim = async () => {
+    if (!cur || busy[id] || uploading) return;
+    mark(id, true);
+    let c = S.doners[id];
+    if (dirty) { c = await saveTart(); if (!c) { mark(id, false); return; } }
+    const eksik = c.actualKg == null || (canPhoto && !c.photoId);
+    if (eksik && force !== id) { setForce(id); mark(id, false); toast(c.actualKg == null ? 'Tartı girilmedi. Yine de teslim etmek için bir daha dokun.' : 'Fiş fotoğrafı yok. Yine de teslim etmek için bir daha dokun.'); return; }
+    setForce(null);
+    const ch = deliveryCharge(c, S.customers, t);
+    if (ch.error) { toast(ch.error + '. Müşteriler ekranından fiyat gir.'); mark(id, false); return; }
     const mid = genId();
-    const mvRec = { code: cur.target, kind: 'mal', date: t, ts: Date.now(), kg: ch.kg, price: ch.price, amount: ch.amount, from: cur.owner, donerId: d.id };
-    if (cur.photoId) mvRec.photoId = cur.photoId;
+    const mvRec = { code: c.target, kind: 'mal', date: t, ts: Date.now(), kg: ch.kg, price: ch.price, amount: ch.amount, from: c.owner, donerId: id };
+    if (c.photoId) mvRec.photoId = c.photoId;
     const ok1 = await safe(() => put('moves', mid, mvRec));
     if (ok1) {
-      const ok2 = await safe(() => put('doners', d.id, { ...cur, status: 'teslim', deliveredAt: t, price: ch.price, amount: ch.amount, moveId: mid }), cur.target + ' hesabına ' + tl(ch.amount) + ' yazıldı');
+      const ok2 = await safe(() => put('doners', id, { ...c, status: 'teslim', deliveredAt: t, price: ch.price, amount: ch.amount, moveId: mid }), c.target + ' hesabına ' + tl(ch.amount) + ' yazıldı');
       if (!ok2) await safe(() => removeDoc('moves', mid));
     }
-    mark(d.id, false);
+    mark(id, false);
   };
   const geriAl = async d => {
     if (confirmUndo !== d.id) { setConfirmUndo(d.id); return; }
     setConfirmUndo(null);
-    const cur = S.doners[d.id]; if (!cur || cur.status !== 'teslim' || busy[d.id]) return;
+    const c = S.doners[d.id]; if (!c || c.status !== 'teslim' || busy[d.id]) return;
     mark(d.id, true);
-    const mv = cur.moveId ? S.moves[cur.moveId] : null;
-    const ok = cur.moveId ? await safe(() => removeDoc('moves', cur.moveId)) : true;
+    const mv = c.moveId ? S.moves[c.moveId] : null;
+    const ok = c.moveId ? await safe(() => removeDoc('moves', c.moveId)) : true;
     if (ok) {
-      const { deliveredAt: _a, price: _p, amount: _m, moveId: _i, ...rest } = cur;
+      const { deliveredAt: _a, price: _p, amount: _m, moveId: _i, ...rest } = c;
       const ok2 = await safe(() => put('doners', d.id, { ...rest, status: 'yolda' }), 'Teslim geri alındı, borç silindi');
-      if (!ok2 && mv) await safe(() => put('moves', cur.moveId, mv)); // döner güncellenemediyse borcu geri yaz
+      if (!ok2 && mv) await safe(() => put('moves', c.moveId, mv)); // döner güncellenemediyse borcu geri yaz
     }
     mark(d.id, false);
   };
-  const stogaDon = async d => {
-    const cur = S.doners[d.id]; if (!cur || cur.status !== 'yolda') return;
-    const { target: _t, sentAt: _s, ...rest } = cur;
-    await safe(() => put('doners', d.id, { ...rest, status: 'stok' }), 'Döner stoğa geri döndü');
+  const stogaDon = async () => {
+    const c = S.doners[id]; if (!c || c.status !== 'yolda') return;
+    const { target: _t, sentAt: _s, ...rest } = c;
+    await safe(() => put('doners', id, { ...rest, status: 'stok' }), 'Döner stoğa geri döndü');
   };
   const bkg = r1(bekleyen.reduce((s, d) => s + d.kg, 0));
-  const Row = (d, done) => {
-    const other = d.owner !== d.target;
-    const weighed = d.actualKg != null;
-    return html`<div class="row" style=${'flex-wrap:wrap;align-items:flex-start;border-color:' + (done ? '#5EEAD4' : other ? '#C2410C' : 'transparent') + ';background:' + (done ? '#F0FDFA' : '#fff')}>
-      <div style="display:flex;gap:14px;min-width:0">
-        ${d.photoId ? html`<button type="button" class="thumb" aria-label="Etiket fotoğrafını büyüt" onClick=${() => setBig(d.photoId)}><img src=${photoSrc(d.photoId)} alt="Döner etiketi"/></button>` : ''}
-        <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
-          <span style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-size:calc(42px * var(--s));font-weight:800;line-height:1">${d.target}</span><span style="font-size:calc(20px * var(--s));font-weight:700;color:#475569">${nameOf(d.target)}</span></span>
-          ${weighed ? html`<span style="font-size:calc(34px * var(--s));font-weight:800;color:#0F766E">${kgA(d.actualKg)} kg <span style="font-size:calc(18px * var(--s));color:#475569">tartılan · liste ${kg(d.kg)}</span></span>`
-            : html`<span style="font-size:calc(34px * var(--s));font-weight:800;color:#0F766E">${kg(d.kg)} kg <span style=${'font-size:calc(18px * var(--s));color:' + (done ? '#475569' : '#9A3412')}>${done ? 'liste kilosuyla' : 'tartılmadı'}</span></span>`}
-          ${other ? html`<span class="tag" style="align-self:flex-start">${d.owner} stoğundan al</span>` : ''}
-          ${done ? html`<span style="font-size:calc(20px * var(--s));font-weight:700">Hesaba yazıldı: ${tl(d.amount)} (${kgA(weighed ? d.actualKg : d.kg)} kg × ${tl(d.price)})</span>` : ''}
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto">
-        ${done ? html`<span class="btn ghost small" style="border-color:#0F766E;color:#0F766E">Verildi ✓</span>
-          <button type="button" class="btn ghost small" disabled=${busy[d.id]} onClick=${() => geriAl(d)}>${confirmUndo === d.id ? 'Emin misin?' : 'Geri al'}</button>`
-        : html`<button type="button" class="btn ghost small" onClick=${() => stogaDon(d)}>Stoğa geri</button>
-          <button type="button" class="btn ghost small" style="border-color:#1D4ED8;color:#1D4ED8" onClick=${() => openTart(d)}>${IFis} ${weighed ? 'Tartı / fiş' : 'Tart + fiş'}</button>
-          <button type="button" class="btn teal" style="min-width:calc(170px * var(--s))" disabled=${busy[d.id]} onClick=${() => teslim(d, false)}>Teslim Et</button>`}
-      </div></div>`;
-  };
-  const td = tart ? S.doners[tart.id] : null;
-  const ad = ask ? S.doners[ask] : null;
+  const flag = (ok, txt) => html`<span class=${'pill ' + (ok ? 'green' : 'orange')}>${ok ? '✓' : '✗'} ${txt}</span>`;
+  const eksikler = cur ? [cur.actualKg == null ? 'tartı' : '', canPhoto && !cur.photoId ? 'fiş fotoğrafı' : ''].filter(Boolean) : [];
   return html`<div class="wrap">
     <${Top} title="Sabah Teslimat" sub=${fd(t) + ' · Bekleyen ' + bekleyen.length + ' döner · ' + kg(bkg) + ' kg'} go=${go}/>
-    ${bekleyen.length ? bekleyen.map(d => Row(d, false)) : html`<div class="card"><h2>Bekleyen teslimat yok</h2><div class="lbl">Dönerleri Döner Stok ekranından teslimata çıkar.</div><button type="button" class="btn" onClick=${() => go('stok')}>Döner stoğa git</button></div>`}
-    ${verilen.length ? html`<div class="lbl" style="margin-top:6px">Bugün teslim edilenler</div>${verilen.map(d => Row(d, true))}` : ''}
-    ${tart && td ? html`<${Modal} close=${cancelTart}>
-      <h2>${td.target} · tartı ve etiket</h2>
-      <div class="lbl">Liste: ${kg(td.kg)} kg${td.owner !== td.target ? ' · ' + td.owner + ' stoğundan' : ''}. Etikette yazan kiloyu gir.</div>
-      <div class="disp"><b>${tart.val || '0'}</b><span>kg</span></div>
-      <${Keypad} value=${tart.val} set=${v => setTart(x => ({ ...x, val: v }))} comma=${true} dec=${3}/>
-      ${canPhoto ? html`
-        <input id="foto" type="file" accept="image/*" capture="environment" style="display:none" onChange=${onPhoto}/>
-        <div style="display:flex;gap:12px;align-items:center">
-          ${tart.photoId ? html`<button type="button" class="thumb" style="width:calc(110px * var(--s));height:calc(110px * var(--s))" aria-label="Fotoğrafı büyüt" onClick=${() => setBig(tart.photoId)}><img src=${photoSrc(tart.photoId)} alt="Döner etiketi"/></button>` : ''}
-          <label for="foto" class="btn ghost" style="flex:1;cursor:pointer;border-color:#1D4ED8;color:#1D4ED8">${ICam} ${tart.uploading ? 'Yükleniyor…' : tart.photoId ? 'Yeniden çek' : 'Etiket fotoğrafı çek'}</label>
-        </div>` : html`<div class="lbl" style="color:#9A3412">Fotoğraf eklemek için uygulamayı düzenleme yetkisi olan hesapla aç.</div>`}
-      <div class="grid3">
-        <button type="button" class="btn ghost" onClick=${cancelTart}>Vazgeç</button>
-        <button type="button" class="btn" style="grid-column:span 2" disabled=${tart.uploading || numOf(tart.val) <= 0} onClick=${saveTart}>KAYDET</button>
+    <div class="two">
+      <div class="side">
+        ${bekleyen.length ? bekleyen.map(d => { const on = d.id === id; const other = d.owner !== d.target; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} style=${'border-color:' + (on ? '#6D28D9' : other ? '#C2410C' : 'transparent')} onClick=${() => { setSel(d.id); setForce(null); }}>
+          <span style="display:flex;flex-direction:column;min-width:0;gap:2px">
+            <span style="display:flex;align-items:baseline;gap:8px"><span style="font-size:calc(30px * var(--s));font-weight:800;line-height:1.1">${d.target}</span><span style="font-size:calc(15px * var(--s));font-weight:700;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameOf(d.target)}</span></span>
+            <span style="display:flex;gap:6px;flex-wrap:wrap">${flag(d.actualKg != null, d.actualKg != null ? kgA(d.actualKg) + ' kg' : 'tartı')}${canPhoto ? flag(!!d.photoId, 'fiş') : ''}${other ? html`<span class="pill red">${d.owner} stoğundan</span>` : ''}</span>
+          </span>
+          <span style="font-size:calc(20px * var(--s));font-weight:800;white-space:nowrap">${kg(d.kg)} kg</span></button>`; })
+          : html`<div class="card"><h2>Bekleyen teslimat yok</h2><div class="lbl">Dönerleri Döner Stok ekranından teslimata çıkar.</div><button type="button" class="btn" onClick=${() => go('stok')}>Döner stoğundan çıkar</button></div>`}
       </div>
-    <//>` : ''}
-    ${ad ? html`<${Modal} close=${() => setAsk(null)}>
-      <h2 style="color:#9A3412">Dur! ${ad.target} için eksik var</h2>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="banner" style=${ad.actualKg == null ? '' : 'background:#F0FDFA;border-color:#0F766E;color:#134E4A'}>${ad.actualKg == null ? '✗ Tartılan kilo girilmedi' : '✓ Tartılan kilo: ' + kgA(ad.actualKg) + ' kg'}</div>
-        ${canPhoto ? html`<div class="banner" style=${ad.photoId ? 'background:#F0FDFA;border-color:#0F766E;color:#134E4A' : ''}>${ad.photoId ? '✓ Fiş fotoğrafı var' : '✗ Fiş fotoğrafı çekilmedi'}</div>` : ''}
+      <div class="main">
+        ${cur ? html`
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${cur.target} · ${nameOf(cur.target)}</h2>${cur.photoId ? html`<button type="button" class="thumb" style="width:calc(56px * var(--s));height:max(44px, calc(56px * var(--s)))" aria-label="Etiket fotoğrafını büyüt" onClick=${() => setBig(cur.photoId)}><img src=${photoSrc(cur.photoId)} alt="Döner etiketi"/></button>` : ''}</div>
+          <div class="lbl">Liste ${kg(cur.kg)} kg${cur.owner !== cur.target ? ' · ' + cur.owner + ' stoğundan' : ''}${eksikler.length ? ' · eksik: ' + eksikler.join(', ') : ' · tartı ve fiş tamam'}</div>
+          <div class="disp"><b>${val || '0'}</b><span>kg</span></div>
+          <${Keypad} value=${val} set=${setVal} comma=${true} dec=${3}/>
+          <input id="foto" type="file" accept="image/*" capture="environment" style="display:none" onChange=${onPhoto}/>
+          <div class="grid3" style="font-size:calc(18px * var(--s))">
+            ${canPhoto ? html`<label for="foto" class="btn ghost small" style="cursor:pointer;border-color:#1D4ED8;color:#1D4ED8;padding:0 6px;font-size:inherit">${ICam} ${uploading ? 'Yükleniyor…' : cur.photoId ? 'Yeniden çek' : 'Fiş çek'}</label>` : html`<span></span>`}
+            <button type="button" class="btn ghost small" style="padding:0 6px;font-size:inherit" disabled=${!dirty || busy[id]} onClick=${saveTart}>Tartıyı kaydet</button>
+            <button type="button" class="btn ghost small" style="padding:0 6px;font-size:inherit" disabled=${busy[id]} onClick=${stogaDon}>Stoğa geri</button>
+          </div>
+          ${force === id ? html`<div class="lbl" style="color:#9A3412">Eksik var (${eksikler.join(', ')}). Bir daha dokunursan yine de teslim edilir.</div>` : ''}
+          <button type="button" class=${'btn ' + (force === id ? 'orange' : 'teal')} style="min-height:max(44px, calc(88px * var(--s) * var(--v)));font-size:calc(30px * var(--s))" disabled=${busy[id] || uploading} onClick=${teslim}>${force === id ? 'Yine de teslim et' + (cur.actualKg == null && !dirty ? ' (' + kg(cur.kg) + ' kg)' : '') : 'Teslim Et'}</button>`
+        : html`<div class="card"><div class="lbl">Teslim edilecek döner yok.</div></div>`}
       </div>
-      <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(30px * var(--s))" onClick=${() => { setAsk(null); openTart({ id: ask }); }}>Eksikleri tamamla</button>
-      <button type="button" class="btn ghost small" style="align-self:center;border-width:2px" onClick=${() => teslim({ id: ask }, true)}>${ad.actualKg == null ? 'Yine de liste kilosuyla (' + kg(ad.kg) + ' kg) teslim et' : 'Fotoğrafsız teslim et'}</button>
-    <//>` : ''}
+    </div>
+    ${verilen.length ? html`<div class="lbl" style="margin-top:6px">Bugün teslim edilenler</div>${verilen.map(d => { const weighed = d.actualKg != null; return html`<div class="row" style="flex-wrap:wrap;align-items:center;border-color:#5EEAD4;background:#F0FDFA">
+      <div style="display:flex;gap:12px;min-width:0;align-items:center">
+        ${d.photoId ? html`<button type="button" class="thumb" style="width:calc(56px * var(--s));height:max(44px, calc(56px * var(--s)))" aria-label="Etiket fotoğrafını büyüt" onClick=${() => setBig(d.photoId)}><img src=${photoSrc(d.photoId)} alt="Döner etiketi"/></button>` : ''}
+        <div style="display:flex;flex-direction:column;min-width:0">
+          <span style="display:flex;align-items:baseline;gap:10px"><span style="font-size:calc(30px * var(--s));font-weight:800;line-height:1.1">${d.target}</span><span style="font-size:calc(22px * var(--s));font-weight:800;color:#0F766E">${kgA(weighed ? d.actualKg : d.kg)} kg</span></span>
+          <span style="font-size:calc(17px * var(--s));font-weight:700">Hesaba yazıldı: ${tl(d.amount)} (${kgA(weighed ? d.actualKg : d.kg)} kg × ${tl(d.price)})${weighed ? '' : ' · liste kilosuyla'}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-left:auto"><span class="btn ghost small" style="border-color:#0F766E;color:#0F766E">Verildi ✓</span>
+        <button type="button" class="btn ghost small" disabled=${busy[d.id]} onClick=${() => geriAl(d)}>${confirmUndo === d.id ? 'Emin misin?' : 'Geri al'}</button></div></div>`; })}` : ''}
     ${big ? html`<${Modal} close=${() => setBig(null)}><img src=${photoSrc(big)} alt="Döner etiketi" style="width:100%;border-radius:16px"/><button type="button" class="btn ghost" onClick=${() => setBig(null)}>Kapat</button><//>` : ''}
   </div>`;
 }
+
 
 // ---------- Müşteri Defteri ----------
 function ekstreText(c, code, E) {
