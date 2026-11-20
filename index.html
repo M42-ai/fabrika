@@ -1926,7 +1926,7 @@ function Mal({ go }) {
 
   // --- mal geldi ---
   const priceStr = tur => { const f = malPrice(S.mal, tur, day); return f != null ? String(r2(f)).replace('.', ',') : tur === 'butun' ? String(s.tavukFiyat).replace('.', ',') : ''; };
-  const openMal = () => { const now = new Date(); setMf({ tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' }); };
+  const openMal = () => { setPf(null); const now = new Date(); setMf({ tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' }); };
   const MF = (k, v) => setMf(f => ({ ...f, [k]: v }));
   const saveMal = async () => {
     const k = num(mf.kg), f = num(mf.fiyat);
@@ -1940,6 +1940,7 @@ function Mal({ go }) {
 
   // --- iş partisi ---
   const openParti = p => {
+    setMf(null);
     const g = {}; isT.forEach(m => { g[m.id] = ''; });
     if (p) {
       p.calc.gir.forEach(x => { g[x.tur] = str(x.kg); });
@@ -1983,11 +1984,9 @@ function Mal({ go }) {
   return html`<div class="wrap">
     <${Top} title="Mal & İşçi" sub=${fd(day) + ' · gelen ' + kg(gelenKg) + ' kg · işçi ödemesi ' + tl(r2(T.odeme))} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
     ${exampleBanner(s)}
-    <div class="grid2">
-      <button type="button" class="btn" onClick=${openMal}>+ Mal geldi</button>
-      <button type="button" class="btn orange" onClick=${() => openParti(null)}>+ İş partisi</button>
-    </div>
-    <div class="stats">
+    <div class="two">
+      <div class="side">
+    <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <div class="stat"><small>Gelen mal</small><b>${kg(gelenKg)} kg</b></div>
       <div class="stat"><small>İşlenen</small><b>${kg(T.gir)} kg</b></div>
       <div class="stat"><small>Et / standart</small><b style=${'color:' + (fireT == null ? '#475569' : fireT < -s.fireEsik ? '#9A3412' : '#0F766E')}>${fireT == null ? '—' : sgn(fireT, pct) + '%'}</b></div>
@@ -2019,8 +2018,14 @@ function Mal({ go }) {
         <button type="button" class="del-x" style="height:max(44px, calc(60px * var(--s)))" onClick=${() => del(p.eski ? 'kesim' : 'parti', p.id, 'İş partisi silindi')}>${confirmDel === (p.eski ? 'kesim' : 'parti') + p.id ? 'Emin misin?' : 'Sil'}</button>
       </div></div>`; })
       : html`<div class="card"><div class="lbl">Bu gün iş partisi yok. Parti: hangi mal işlendi, ne çıktı, kimler çalıştı. Fire ve ödeme otomatik hesaplanır, ödeme çalışanlara bölünür.</div></div>`}
-
-    ${mf ? html`<${Modal} close=${() => setMf(null)}>
+      </div>
+      <div class="main card">
+        <div class="g2">
+          <button type="button" class=${'btn small ' + (mf ? '' : 'ghost')} aria-pressed=${!!mf} onClick=${openMal}>+ Mal geldi</button>
+          <button type="button" class=${'btn small ' + (pf && !pf.id ? 'orange' : 'ghost')} aria-pressed=${!!pf} onClick=${() => openParti(null)}>+ İş partisi</button>
+        </div>
+        ${!mf && !pf ? html`<div class="lbl">Yeni giriş için üstteki düğmelere dokun. Soldaki bir partiyi "Düzelt" ile burada açabilirsin.</div>` : ''}
+    ${mf ? html`<div style="display:contents">
       <h2>Mal geldi · ${fd(day)}</h2>
       <div class="g2">${MAL.map(m => html`<button type="button" class=${'btn small ' + (mf.tur === m.id ? '' : 'ghost')} aria-pressed=${mf.tur === m.id} onClick=${() => setMf(f => ({ ...f, tur: m.id, fiyat: priceStr(m.id) }))}>${m.ad}</button>`)}</div>
       <div class="fgrid">
@@ -2031,9 +2036,8 @@ function Mal({ go }) {
       ${num(mf.kg) > 0 && num(mf.fiyat) > 0 ? html`<div class="lbl">Tutar: ${tl(r2(num(mf.kg) * num(mf.fiyat)))} (KDV hariç)${MAL.find(m => m.id === mf.tur).is ? '' : ' · işçiliksiz, doğrudan marinasyona gider'}</div>` : ''}
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setMf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveMal}>KAYDET</button></div>
-    <//>` : ''}
-
-    ${pf ? html`<${Modal} close=${() => setPf(null)}>
+    </div>` : ''}
+    ${pf ? html`<div style="display:contents">
       <h2>${pf.id ? 'Partiyi düzelt' : 'İş partisi'} · ${fd(day)}</h2>
       <div class="lbl">1. İşlenen mal</div>
       <div class="fgrid">${isT.map(m => html`<${Fld} label=${m.ad} unit="kg" value=${pf.g[m.id]} set=${v => setPf(f => ({ ...f, g: { ...f.g, [m.id]: v } }))}/>`)}</div>
@@ -2059,7 +2063,9 @@ function Mal({ go }) {
       ${pf.isciler.length ? html`<button type="button" class="btn ghost small" aria-pressed=${pf.elle} onClick=${toggleElle}>${pf.elle ? 'Eşit bölüşüme dön' : 'Payları elle gir'}</button>` : ''}
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setPf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveParti}>KAYDET</button></div>
-    <//>` : ''}
+    </div>` : ''}
+      </div>
+    </div>
   </div>`;
 }
 
