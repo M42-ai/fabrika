@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Döner Fabrika</title>
+<meta name="theme-color" content="#1E3A8A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fabrika">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
 <style>
 *{box-sizing:border-box}
@@ -914,6 +921,7 @@ function Ana({ go }) {
       <div class="stat"><small>Stokta döner</small><b>${kg(stokKg)} kg</b></div>
       <div class="stat"><small>Toplam alacak</small><b style="color:#C2410C">${open ? tl(alacak) : '••••'}</b><small>Bugün tahsilat ${open ? tl(tahsil) : '••••'}</small></div>
     </div>
+    ${PWA.waiting ? html`<button type="button" class="banner" style="background:#DBEAFE;border-color:#1D4ED8;color:#1E3A8A;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%" onClick=${() => { PWA.waiting.postMessage('skipWaiting'); }}><span>Yeni sürüm hazır (GitHub'dan geldi).</span><span style="white-space:nowrap">Yenile ›</span></button>` : ''}
     ${ekZ.length ? html`<button type="button" class="banner" style="display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%" onClick=${() => { UI.defterSirala = 'ekstre'; go('defter'); }}>
       <span>Ekstre zamanı gelen ${ekZ.length} müşteri: ${ekZ.slice(0, 4).map(x => (x.kodsuz ? '' : x.id + ' ') + x.name).join(', ')}${ekZ.length > 4 ? ' …' : ''}</span><span style="white-space:nowrap">Defter ›</span></button>` : ''}
     <div class="tiles">
@@ -933,11 +941,12 @@ function Ana({ go }) {
       <div class="lbl" style="font-size:calc(17px * var(--s))">Bu ekran ${UI.w} × ${UI.h} · otomatik boyut %${Math.round(UI.auto * 100)}. Telefon açılıp kapanınca (Fold) boyut kendiliğinden değişir; iç ekranda yan sütun genişler.</div>
       <div class="grid2">${[[0.9, 'Küçük'], [1, 'Otomatik'], [1.12, 'Büyük'], [1.25, 'Çok büyük']].map(([v, l]) => html`<button type="button" class=${'btn small ' + (UI.mult === v ? '' : 'ghost')} aria-pressed=${UI.mult === v} onClick=${() => setMult(v)}>${l}</button>`)}</div>
       <div class="lbl">${S.mode === 'live' ? 'Veriler kaydediliyor (çevrim içi).' : 'Deneme modu: veriler kaydedilmiyor.'}</div>
+      ${PWA.prompt ? html`<button type="button" class="btn teal" onClick=${async () => { const p = PWA.prompt; PWA.prompt = null; setSettings(false); try { await p.prompt(); } catch (e) {} }}>Telefona uygulama olarak ekle</button>` : matchMedia('(display-mode: standalone)').matches ? html`<div class="lbl">Uygulama olarak kurulu. Yeni sürümler GitHub'dan kendiliğinden gelir.</div>` : html`<div class="lbl" style="font-size:calc(17px * var(--s))">Telefona kurmak için: Chrome menüsü (⋮) › "Ana ekrana ekle" / "Uygulamayı yükle".</div>`}
       ${S.config.pin ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); go('pin'); }}>PIN değiştir</button>` : ''}
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.6 · 20.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.7 · 20.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -2527,6 +2536,23 @@ function App() {
 
 applyScale();
 render(html`<${App}/>`, document.getElementById('app'));
+// ---------- Telefon uygulaması (PWA): kurulum ve GitHub'dan güncelleme ----------
+// Ana ekrana eklenince uygulama gibi açılır. GitHub'a yeni sürüm gönderilince service worker bunu görür,
+// "Yeni sürüm hazır" uyarısı çıkar; dokununca yenilenir. İnternet yokken son sürüm yine açılır (veri için internet gerekir).
+const PWA = { prompt: null, waiting: null };
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); PWA.prompt = e; emit(); });
+addEventListener('appinstalled', () => { PWA.prompt = null; toast('Uygulama ana ekrana eklendi'); });
+if ('serviceWorker' in navigator && !DENEME && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    const watch = () => { const w = reg.waiting; if (w && navigator.serviceWorker.controller) { PWA.waiting = w; emit(); } };
+    watch();
+    reg.addEventListener('updatefound', () => { const nw = reg.installing; if (nw) nw.addEventListener('statechange', watch); });
+    setInterval(() => reg.update().catch(() => {}), 30 * 60000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloading) return; reloading = true; location.reload(); });
+}
 init();
 </script>
 </body>
