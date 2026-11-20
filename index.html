@@ -2409,12 +2409,28 @@ function Tedarik({ go }) {
   const satir = x => x.tur === 'odeme' ? 'Ödeme yaptık' : x.tur === 'duzeltme' ? x.not || 'Düzeltme' : x.tur === 'malzeme' && !x.miktar ? x.ad + ' (kilo yazılmamış)' : x.tur === 'deri' ? 'Deri · ' + kgA(x.miktar) + ' kg' + (x.fiyat ? ' × ' + tl(x.fiyat) : '') : x.tur === 'iscilik' ? 'Döner işçiliği · ' + kgA(x.miktar) + ' kg × ' + tl(x.fiyat) : x.ad + ' · ' + nf2.format(x.miktar) + ' × ' + tl(x.fiyat);
   return html`<div class="wrap">
     <${Top} title="Tedarikçi" sub=${fd(day) + ' · ' + firma + ' · gün toplamı ' + tl(og.alim)} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
-    <div class="chips">${flist.map(n => html`<button type="button" class=${'btn small ' + (n === firma ? 'purple' : 'ghost')} aria-pressed=${n === firma} onClick=${() => setFirma(n)}>${n}</button>`)}
-      <span style="display:flex;gap:6px;flex:1;min-width:200px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni firma adı" placeholder="Yeni firma adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
-      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setFirma(yeni.trim()); setYeni(''); } }}>Ekle</button></span></div>
+    <div class="two">
+      <div class="side">
+    ${flist.map(n => html`<button type="button" class=${'row pick' + (n === firma ? ' on' : '')} aria-pressed=${n === firma} onClick=${() => { setFirma(n); setF(null); }}>${n}</button>`)}
+      <span style="display:flex;gap:6px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni firma adı" placeholder="Yeni firma adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
+      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setFirma(yeni.trim()); setYeni(''); } }}>Ekle</button></span>
     <div class="stat" style="background:#FFF7ED;outline:2px solid #FDBA74"><small style="color:#7C2D12">${firma} firmasına borcumuz (tüm alımlar − ödemeler)</small><b style="color:#C2410C;font-size:calc(44px * var(--s))">${tl(ot.bakiye)}</b></div>
-    <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][2]} onClick=${() => open(t)}>+ ${TUR[t][0]}</button>`)}</div>
-    <div class="stats">
+      </div>
+      <div class="main">
+    <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][2] + (f && f.tur === t ? ';outline:4px solid #0F172A' : '')} aria-pressed=${!!f && f.tur === t} onClick=${() => open(t)}>+ ${TUR[t][0]}</button>`)}</div>
+    ${f ? html`<div class="card" style="border:3px solid #6D28D9;gap:10px">
+      <h2>${TUR[f.tur][0]} · ${firma}</h2><div class="lbl">${fd(day)}</div>
+      ${f.tur === 'malzeme' ? html`<${Fld} label="Malzeme adı" value=${f.ad} set=${v => FF('ad', v)} text=${true}/>
+        ${malzemeler.length ? html`<div class="chips">${malzemeler.map(n => html`<button type="button" class="btn ghost small" onClick=${() => { const l = lastOf('malzeme', n); setF(x => ({ ...x, ad: n, fiyat: l && l.fiyat ? String(l.fiyat).replace('.', ',') : x.fiyat })); }}>${n}</button>`)}</div>` : ''}` : ''}
+      ${f.tur === 'odeme' ? html`<${Fld} label="Ödenen tutar" unit="₺" value=${f.tutar} set=${v => FF('tutar', v)}/>` : html`<div class="fgrid">
+        <${Fld} label=${f.tur === 'deri' ? 'Deri' : f.tur === 'iscilik' ? 'İşçiliği yapılan döner' : 'Miktar'} unit=${f.tur === 'malzeme' ? '' : 'kg'} value=${f.miktar} set=${v => FF('miktar', v)}/>
+        <${Fld} label=${f.tur === 'deri' ? 'Kilo fiyatı (bedelsizse boş)' : 'Birim fiyat'} unit="₺" value=${f.fiyat} set=${v => FF('fiyat', v)}/></div>
+        <div class="card" style="background:#F1F5F9">${kvRow('Tutar', tl(tutarOf(f)), true)}</div>`}
+      <${Fld} label="Not (isteğe bağlı)" value=${f.not} set=${v => FF('not', v)} text=${true}/>
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setF(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
+    </div>` : ''}
+    <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <div class="stat"><small>Deri (bugün)</small><b>${kg(og.deriKg)} kg</b>${og.deriTL ? html`<small>${tl(og.deriTL)}</small>` : ''}</div>
       <div class="stat"><small>İşçilik</small><b>${tl(og.iscilikTL)}</b><small>${kg(og.iscilikKg)} kg döner</small></div>
       <div class="stat"><small>Malzeme</small><b>${tl(og.malzemeTL)}</b></div>
@@ -2430,18 +2446,8 @@ function Tedarik({ go }) {
     ${son.length ? html`<h2 style="margin-top:4px">${firma} · son kayıtlar</h2>
       ${son.map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b><small>${fd(x.date)}${x.kaynak === 'excel' ? ' · Excel' : ''}${x.not && x.tur !== 'duzeltme' ? ' · ' + x.not : ''}</small></span>
         <span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${(x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar || 0))}</span></div>`)}` : ''}
-    ${f ? html`<${Modal} close=${() => setF(null)}>
-      <h2>${TUR[f.tur][0]} · ${firma}</h2><div class="lbl">${fd(day)}</div>
-      ${f.tur === 'malzeme' ? html`<${Fld} label="Malzeme adı" value=${f.ad} set=${v => FF('ad', v)} text=${true}/>
-        ${malzemeler.length ? html`<div class="chips">${malzemeler.map(n => html`<button type="button" class="btn ghost small" onClick=${() => { const l = lastOf('malzeme', n); setF(x => ({ ...x, ad: n, fiyat: l && l.fiyat ? String(l.fiyat).replace('.', ',') : x.fiyat })); }}>${n}</button>`)}</div>` : ''}` : ''}
-      ${f.tur === 'odeme' ? html`<${Fld} label="Ödenen tutar" unit="₺" value=${f.tutar} set=${v => FF('tutar', v)}/>` : html`<div class="fgrid">
-        <${Fld} label=${f.tur === 'deri' ? 'Deri' : f.tur === 'iscilik' ? 'İşçiliği yapılan döner' : 'Miktar'} unit=${f.tur === 'malzeme' ? '' : 'kg'} value=${f.miktar} set=${v => FF('miktar', v)}/>
-        <${Fld} label=${f.tur === 'deri' ? 'Kilo fiyatı (bedelsizse boş)' : 'Birim fiyat'} unit="₺" value=${f.fiyat} set=${v => FF('fiyat', v)}/></div>
-        <div class="card" style="background:#F1F5F9">${kvRow('Tutar', tl(tutarOf(f)), true)}</div>`}
-      <${Fld} label="Not (isteğe bağlı)" value=${f.not} set=${v => FF('not', v)} text=${true}/>
-      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setF(null)}>Vazgeç</button>
-        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
-    <//>` : ''}
+      </div>
+    </div>
   </div>`;
 }
 
@@ -2484,34 +2490,39 @@ function Sahsi({ go }) {
   };
   return html`<div class="wrap">
     <${Top} title="Şahsi hesaplar" sub=${kisi ? kisi + ' · ' + mine.length + ' kayıt' : 'Kişi seç ya da ekle'} go=${go}/>
-    <div class="chips">${klist.map(n => html`<button type="button" class=${'btn small ' + (n === kisi ? 'purple' : 'ghost')} aria-pressed=${n === kisi} onClick=${() => { setKisi(n); setLim(30); }}>${n}</button>`)}
-      <span style="display:flex;gap:6px;flex:1;min-width:200px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni kişi adı" placeholder="Yeni kişi adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
-      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setKisi(yeni.trim()); setYeni(''); } }}>Ekle</button></span></div>
-    ${kisi ? html`
-      <div class="stat" style=${bak >= 0 ? 'background:#FFF7ED;outline:2px solid #FDBA74' : 'background:#F0FDFA;outline:2px solid #5EEAD4'}><small>${bak >= 0 ? kisi + ' bize borçlu' : 'Biz ' + kisi + ' kişisine borçluyuz'}</small><b style=${'font-size:calc(44px * var(--s));color:' + (bak >= 0 ? '#C2410C' : '#0F766E')}>${tl(Math.abs(bak))}</b></div>
-      <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][1]} onClick=${() => setF({ tur: t, tutar: '', not: '' })}>+ ${TUR[t][0]}</button>`)}</div>
-      ${mine.slice(0, lim).map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b><small>${fd(x.date)}${x.kaynak === 'excel' ? ' · Excel' : ''}</small>${x.not ? html`<small style="display:block;color:#475569">${x.not}</small>` : ''}</span>
-        <span style="display:flex;align-items:center;gap:8px">${x.tur === 'not' ? '' : html`<span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${(x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar))}</span>`}
-        <button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></span></div>`)}
-      ${mine.length > lim ? html`<button type="button" class="btn ghost small" onClick=${() => setLim(l => l + 50)}>Daha eski kayıtları göster (${mine.length - lim} kaldı)</button>` : ''}` : ''}
-    <h2 style="margin-top:8px">Kredi kartları</h2>
-    <div class="lbl">Sadece kart adı, hesap kesim ve son ödeme günü. Şifreler ve numaralar burada tutulmaz.</div>
-    ${kartlar.length ? html`<div class="tbl"><div class="tr5 head"><span>Kart</span><span>Kesim</span><span>Son ödeme</span><span>Durum</span><span>Not</span></div>
-      ${kartlar.map(k => html`<button type="button" class="tr5" style="width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer" onClick=${() => setKf({ id: k.id, durum: k.durum || '', not: k.not || '' })}><span><b>${k.ad}</b>${k.limit ? html`<small class="pcs">limit ${tl(k.limit)}</small>` : ''}</span><span>${k.kesim ? 'ayın ' + k.kesim : '—'}</span><span>${k.sonOdeme ? 'ayın ' + k.sonOdeme : '—'}</span><span>${k.durum || '—'}</span><span>${k.not || ''}</span></button>`)}</div>` : html`<div class="lbl">Kart yok.</div>`}
-    ${f ? html`<${Modal} close=${() => setF(null)}>
+    <div class="two">
+      <div class="side">
+    ${klist.map(n => html`<button type="button" class=${'row pick' + (n === kisi ? ' on' : '')} aria-pressed=${n === kisi} onClick=${() => { setKisi(n); setLim(30); setF(null); }}>${n}</button>`)}
+      <span style="display:flex;gap:6px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni kişi adı" placeholder="Yeni kişi adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
+      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setKisi(yeni.trim()); setYeni(''); } }}>Ekle</button></span>
+    ${kisi ? html`<div class="stat" style=${bak >= 0 ? 'background:#FFF7ED;outline:2px solid #FDBA74' : 'background:#F0FDFA;outline:2px solid #5EEAD4'}><small>${bak >= 0 ? kisi + ' bize borçlu' : 'Biz ' + kisi + ' kişisine borçluyuz'}</small><b style=${'font-size:calc(44px * var(--s));color:' + (bak >= 0 ? '#C2410C' : '#0F766E')}>${tl(Math.abs(bak))}</b></div>` : ''}
+      </div>
+      <div class="main">
+    ${kisi ? html`<div style="display:contents">
+      <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][1] + (f && f.tur === t ? ';outline:4px solid #0F172A' : '')} aria-pressed=${!!f && f.tur === t} onClick=${() => setF({ tur: t, tutar: '', not: '' })}>+ ${TUR[t][0]}</button>`)}</div>
+    ${f ? html`<div class="card" style="border:3px solid #6D28D9;gap:10px">
       <h2>${TUR[f.tur][0]} · ${kisi}</h2><div class="lbl">${fd(today())}</div>
       ${f.tur === 'not' ? '' : html`<${Fld} label="Tutar" unit="₺" value=${f.tutar} set=${v => FF('tutar', v)}/>`}
       <${Fld} label=${f.tur === 'not' ? 'Not' : 'Açıklama (isteğe bağlı)'} value=${f.not} set=${v => FF('not', v)} text=${true}/>
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setF(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
-    <//>` : ''}
-    ${kf ? html`<${Modal} close=${() => setKf(null)}>
-      <h2>${(S.kartlar[kf.id] || {}).ad}</h2>
+    </div>` : ''}
+      ${mine.slice(0, lim).map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b><small>${fd(x.date)}${x.kaynak === 'excel' ? ' · Excel' : ''}</small>${x.not ? html`<small style="display:block;color:#475569">${x.not}</small>` : ''}</span>
+        <span style="display:flex;align-items:center;gap:8px">${x.tur === 'not' ? '' : html`<span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${(x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar))}</span>`}
+        <button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></span></div>`)}
+      ${mine.length > lim ? html`<button type="button" class="btn ghost small" onClick=${() => setLim(l => l + 50)}>Daha eski kayıtları göster (${mine.length - lim} kaldı)</button>` : ''}
+    </div>` : html`<div class="card"><div class="lbl">Soldan kişi seç ya da yeni kişi ekle.</div></div>`}
+      </div>
+    </div>
+    <h2 style="margin-top:8px">Kredi kartları</h2>
+    <div class="lbl">Sadece kart adı, hesap kesim ve son ödeme günü. Şifreler ve numaralar burada tutulmaz.</div>
+    ${kartlar.length ? html`<div class="tbl"><div class="tr5 head"><span>Kart</span><span>Kesim</span><span>Son ödeme</span><span>Durum</span><span>Not</span></div>
+      ${kartlar.map(k => html`<div style="display:contents"><button type="button" class="tr5" style="width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer" onClick=${() => setKf({ id: k.id, durum: k.durum || '', not: k.not || '' })}><span><b>${k.ad}</b>${k.limit ? html`<small class="pcs">limit ${tl(k.limit)}</small>` : ''}</span><span>${k.kesim ? 'ayın ' + k.kesim : '—'}</span><span>${k.sonOdeme ? 'ayın ' + k.sonOdeme : '—'}</span><span>${k.durum || '—'}</span><span>${k.not || ''}</span></button>${kf && kf.id === k.id ? html`<div class="card" style="border-radius:0;border-top:3px solid #6D28D9;gap:8px">
       <${Fld} label="Durum (ör. Kasım ödendi)" value=${kf.durum} set=${v => setKf(x => ({ ...x, durum: v }))} text=${true}/>
       <${Fld} label="Not" value=${kf.not} set=${v => setKf(x => ({ ...x, not: v }))} text=${true}/>
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setKf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveKart}>KAYDET</button></div>
-    <//>` : ''}
+    </div>` : ''}</div>`)}</div>` : html`<div class="lbl">Kart yok.</div>`}
   </div>`;
 }
 
