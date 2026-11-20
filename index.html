@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
 <style>
 *{box-sizing:border-box}
-html{--s:1}
+html{--s:1;--v:1}
 html,body{margin:0;background:#CFE8FF;color:#0F172A;font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
 button,input{font-family:inherit;color:inherit}
 button{cursor:pointer}
@@ -32,44 +32,45 @@ h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
 .muted{color:#475569}
 .card{background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:14px}
 .two{display:flex;gap:24px;align-items:flex-start}
-.side{width:calc(340px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
-/* Fold iç ekranı (≈900-1100 px genişlik, kareye yakın): yan sütun geniş, kutular biraz daha büyük */
-@media (min-width:880px){.side{width:calc(360px * var(--s))}.two{gap:22px}.tiles .tile{min-height:calc(230px * var(--s))}.stats{gap:14px}.modal{width:min(760px,100%)}}
-@media (min-width:1040px){.side{width:calc(400px * var(--s))}.grid3{gap:14px}.keys{gap:12px}}
+.side{width:calc(300px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
+/* Düzen: Fold 8 Ultra iç ekranı tarayıcıya 752×749 px bildirir (ölçek 1, kareye yakın) → iki sütun: sol 300 px seçim, sağ ≈390 px giriş.
+   Sütun/üst-alt kararı JS'te verilir (html[data-layout]); media query kullanılmaz ki adres çubuğu gizlenince yükseklik değişse de düzen zıplamasın. */
+@media (min-width:1000px){.side{width:calc(360px * var(--s))}.two{gap:22px}.tiles .tile{min-height:calc(230px * var(--s))}.stats{gap:14px}.modal{width:min(760px,100%)}}
+@media (min-width:1160px){.side{width:calc(400px * var(--s))}.grid3{gap:14px}.keys{gap:12px}}
 .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
-.btn{border:none;border-radius:22px;min-height:max(44px, calc(80px * var(--s)));padding:0 24px;font-size:calc(27px * var(--s));font-weight:800;color:#fff;background:#1D4ED8;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;text-align:center}
+.btn{border:none;border-radius:22px;min-height:max(44px, calc(80px * var(--s) * var(--v)));padding:0 24px;font-size:calc(27px * var(--s));font-weight:800;color:#fff;background:#1D4ED8;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;text-align:center}
 .btn.teal{background:#0F766E}.btn.orange{background:#C2410C}.btn.purple{background:#6D28D9}
 .btn.ghost{background:#fff;color:#0F172A;border:3px solid #334155}
-.btn.small{min-height:max(44px, calc(60px * var(--s)));font-size:calc(21px * var(--s));border-radius:16px;padding:0 16px}
+.btn.small{min-height:max(44px, calc(60px * var(--s) * var(--v)));font-size:calc(21px * var(--s));border-radius:16px;padding:0 16px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.code{height:max(44px, calc(92px * var(--s)));border-radius:20px;border:3px solid #CBD5E1;background:#fff;font-size:calc(38px * var(--s));font-weight:800}
+.code{height:max(44px, calc(92px * var(--s) * var(--v)));border-radius:20px;border:3px solid #CBD5E1;background:#fff;font-size:calc(38px * var(--s));font-weight:800}
 .code.on{background:#1D4ED8;border-color:#1D4ED8;color:#fff}
 .keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.key{height:max(44px, calc(76px * var(--s)));border-radius:18px;border:1px solid #94A3B8;background:#fff;font-size:calc(38px * var(--s));font-weight:700}
+.key{height:max(44px, calc(76px * var(--s) * var(--v)));border-radius:18px;border:1px solid #94A3B8;background:#fff;font-size:calc(38px * var(--s));font-weight:700}
 .key.del{background:#FEE2E2;color:#991B1B;font-size:calc(28px * var(--s))}
-.disp{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;min-height:max(44px, calc(112px * var(--s)));padding:0 26px;border-radius:22px;background:#fff;border:3px solid #1D4ED8}
-.disp b{font-size:calc(78px * var(--s));font-weight:800;letter-spacing:-1px;line-height:calc(108px * var(--s))}
+.disp{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;min-height:max(44px, calc(112px * var(--s) * var(--v)));padding:0 26px;border-radius:22px;background:#fff;border:3px solid #1D4ED8}
+.disp b{font-size:calc(78px * var(--s) * var(--v));font-weight:800;letter-spacing:-1px;line-height:calc(108px * var(--s) * var(--v))}
 .disp span{font-size:calc(34px * var(--s));font-weight:700;color:#475569}
 .parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .part{background:#fff;border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
 .part small{font-size:calc(19px * var(--s));font-weight:700;color:#475569}
 .part b{font-size:calc(36px * var(--s));font-weight:800}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:18px;padding:14px 18px;border:2px solid transparent}
-.pick{width:100%;text-align:left;font-size:calc(22px * var(--s));font-weight:700;min-height:max(44px, calc(72px * var(--s)))}
+.pick{width:100%;text-align:left;font-size:calc(22px * var(--s));font-weight:700;min-height:max(44px, calc(72px * var(--s) * var(--v)))}
 .pick.on{background:#6D28D9;color:#fff;border-color:#6D28D9}
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:calc(66px * var(--s));height:max(44px, calc(46px * var(--s)));padding:0 10px;border-radius:12px;background:#EDE9FE;color:#5B21B6;font-size:calc(23px * var(--s));font-weight:800;flex:none}
 .pick.on .badge{background:#fff}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:12px;background:#FFEDD5;color:#9A3412;font-size:calc(20px * var(--s));font-weight:800;border:2px solid #C2410C}
 .chips{display:flex;flex-wrap:wrap;gap:10px}
-.chip{min-width:calc(120px * var(--s));height:max(44px, calc(84px * var(--s)));border-radius:18px;border:3px solid #0E7490;background:#ECFEFF;color:#0F172A;font-size:calc(30px * var(--s));font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0 12px}
+.chip{min-width:calc(120px * var(--s));height:max(44px, calc(84px * var(--s) * var(--v)));border-radius:18px;border:3px solid #0E7490;background:#ECFEFF;color:#0F172A;font-size:calc(30px * var(--s));font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0 12px}
 .chip small{font-size:calc(15px * var(--s));font-weight:700;color:#475569}
 .modalbg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
 .modal{background:#fff;border-radius:28px;padding:26px;width:min(640px,100%);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;padding:18px 26px;border-radius:18px;font-size:calc(22px * var(--s));font-weight:700;z-index:30;max-width:92vw;text-align:center}
 .banner{background:#FFF7ED;border:2px solid #C2410C;color:#7C2D12;border-radius:16px;padding:14px 18px;font-size:calc(19px * var(--s));font-weight:700}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.tile{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;min-height:max(44px, calc(200px * var(--s)));padding:22px 24px;border-radius:26px;color:#fff;border:none;text-align:left;font-size:calc(36px * var(--s));font-weight:800;line-height:1.1}
+.tile{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;min-height:max(44px, calc(200px * var(--s) * var(--v)));padding:22px 24px;border-radius:26px;color:#fff;border:none;text-align:left;font-size:calc(36px * var(--s));font-weight:800;line-height:1.1}
 .tile.wide{grid-column:span 2}
 .tile small{font-size:calc(21px * var(--s));font-weight:700;display:block;margin-top:6px}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -78,17 +79,17 @@ h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
 .stat b{font-size:calc(31px * var(--s));font-weight:800}
 .tbl{background:#fff;border-radius:22px;overflow:hidden;border:2px solid #94A3B8}
 .tr{display:grid;grid-template-columns:minmax(0,1.25fr) repeat(4,minmax(0,1fr));align-items:center;padding:12px 20px;gap:8px;border-top:1px solid #E2E8F0}
-.tr.head{background:#0F172A;color:#fff;font-size:calc(20px * var(--s));font-weight:700;border-top:none;min-height:max(44px, calc(60px * var(--s)))}
+.tr.head{background:#0F172A;color:#fff;font-size:calc(20px * var(--s));font-weight:700;border-top:none;min-height:max(44px, calc(60px * var(--s) * var(--v)))}
 .tr.foot{background:#ECFEFF;border-top:3px solid #0E7490}
 .tr .c{font-size:calc(38px * var(--s));font-weight:800}
 .tr .n{text-align:right;font-size:calc(34px * var(--s));font-weight:700}
 .tr .n.k{color:#1E3A8A;font-weight:800;font-size:calc(38px * var(--s))}
 .pcs{font-size:calc(16px * var(--s));font-weight:700;color:#475569;display:block}
 .tr .pcs{font-size:calc(17px * var(--s));font-weight:700;color:#475569;display:block}
-input.big{height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px solid #94A3B8;background:#F8FAFC;padding:0 16px;font-size:calc(28px * var(--s));font-weight:700;width:100%;min-width:0}
+input.big{height:max(44px, calc(72px * var(--s) * var(--v)));border-radius:16px;border:2px solid #94A3B8;background:#F8FAFC;padding:0 16px;font-size:calc(28px * var(--s));font-weight:700;width:100%;min-width:0}
 .ratio{display:grid;grid-template-columns:calc(120px * var(--s)) max(44px, calc(72px * var(--s))) minmax(0,1fr) max(44px, calc(72px * var(--s)));align-items:center;gap:10px}
 .ratio label{font-size:calc(27px * var(--s));font-weight:800}
-.step{height:max(44px, calc(72px * var(--s)));border-radius:18px;border:2px solid #94A3B8;background:#F1F5F9;font-size:calc(38px * var(--s));font-weight:700}
+.step{height:max(44px, calc(72px * var(--s) * var(--v)));border-radius:18px;border:2px solid #94A3B8;background:#F1F5F9;font-size:calc(38px * var(--s));font-weight:700}
 .pct{display:flex;align-items:center;justify-content:center;height:max(44px, calc(72px * var(--s)));border-radius:18px;border:2px solid #94A3B8;background:#fff}
 .pct span{font-size:calc(30px * var(--s));font-weight:800;color:#475569}
 .pct input{width:calc(100px * var(--s));border:none;background:transparent;text-align:center;font-size:calc(36px * var(--s));font-weight:800}
@@ -116,7 +117,7 @@ input.big{height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px 
 .tbl .tr4.head,.tbl .tr5.head,.tbl .tr6.head{background:#0F172A;color:#fff}
 .tr4.strong{background:#ECFEFF;font-weight:800;font-size:calc(25px * var(--s))}
 .tabs{display:flex;gap:6px;background:#fff;border-radius:18px;padding:6px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 10px rgba(15,23,42,.14)}
-.tab{flex:1;min-width:0;min-height:max(44px, calc(60px * var(--s)));border:none;border-radius:13px;background:transparent;font-size:calc(21px * var(--s));font-weight:800;color:#334155;padding:0 6px;line-height:1.1}
+.tab{flex:1;min-width:0;min-height:max(44px, calc(60px * var(--s) * var(--v)));border:none;border-radius:13px;background:transparent;font-size:calc(21px * var(--s));font-weight:800;color:#334155;padding:0 6px;line-height:1.1}
 .tab.on{background:#0F172A;color:#fff}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .g2 .btn{padding:0 8px;line-height:1.1}
@@ -125,7 +126,7 @@ input.big{height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px 
 .code{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
 .code small{font-size:calc(16px * var(--s));font-weight:700;opacity:.85}
 .stepper{display:grid;grid-template-columns:max(44px, calc(88px * var(--s))) minmax(0,1fr) max(44px, calc(88px * var(--s)));gap:10px;align-items:stretch}
-.stepper b{display:flex;align-items:center;justify-content:center;font-size:calc(52px * var(--s));font-weight:800;background:#fff;border-radius:18px;border:2px solid #94A3B8;min-height:max(44px, calc(80px * var(--s)))}
+.stepper b{display:flex;align-items:center;justify-content:center;font-size:calc(52px * var(--s));font-weight:800;background:#fff;border-radius:18px;border:2px solid #94A3B8;min-height:max(44px, calc(80px * var(--s) * var(--v)))}
 .stepper .step{height:auto}
 button.stat{cursor:pointer}
 .del-x{border:none;background:#FEE2E2;color:#991B1B;border-radius:12px;height:max(44px, calc(44px * var(--s)));padding:0 12px;font-size:calc(18px * var(--s));font-weight:800}
@@ -133,25 +134,37 @@ button.stat{cursor:pointer}
 .pill.red{background:#FEE2E2;color:#991B1B}.pill.orange{background:#FFEDD5;color:#9A3412}.pill.grey{background:#E2E8F0;color:#334155}.pill.green{background:#DCFCE7;color:#166534}
 pre.ek{white-space:pre-wrap;word-break:break-word;font:inherit;font-size:calc(17px * var(--s));font-weight:600;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:12px 14px;margin:0;max-height:40vh;overflow:auto}
 input.big[type=date]{padding:0 10px}
-@media (max-width:760px){
-.wrap{padding:16px 14px 120px}
-.two{flex-direction:column;align-items:stretch}
-.side{width:auto}
-.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
-.tile.wide{grid-column:span 2}
-.tile.tslm{grid-column:auto}
-.grid2{grid-template-columns:1fr}
-.uretim .side{display:contents}
-.uretim .codes-blk{order:1}
-.uretim .main{order:2}
-.uretim .today-blk{order:3}
-.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-.fgrid{grid-template-columns:1fr}
-.tr4,.tr5,.tr6{padding:8px 8px;font-size:calc(19px * var(--s));gap:4px}
-.tr3{font-size:calc(20px * var(--s))}
-.tr{padding:10px 10px}
-.tr .c{font-size:calc(30px * var(--s))}.tr .n{font-size:calc(26px * var(--s))}.tr .n.k{font-size:calc(28px * var(--s))}
-}
+/* Dar düzen (dış ekran, telefon): aynı bileşenler üst-alta dizilir; seçim bloğu üstte, giriş altta */
+@media (max-width:600px){.wrap{padding:16px 14px 120px}}
+html[data-layout=narrow] .two{flex-direction:column;align-items:stretch}
+/* Sıkı düzen (iç ekran, yükseklik 820 px altı): --v 0,76 ile yükseklikler kısalır, boşluklar daralır; yazılar aynı kalır */
+html[data-fit=tight] .wrap{gap:12px;padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+html[data-fit=tight] .card{padding:16px;gap:10px}
+html[data-fit=tight] .main,html[data-fit=tight] .side{gap:10px}
+html[data-fit=tight] .keys{gap:8px}
+html[data-fit=tight] .part{padding:8px 14px}
+html[data-fit=tight] .part b{font-size:calc(30px * var(--s))}
+html[data-fit=tight] .stat{padding:10px 14px}
+html[data-fit=tight] h1{font-size:calc(34px * var(--s))}
+html[data-fit=tight] .top{gap:12px}
+/* Sıkı düzende sağ sütun (giriş) hiç kırpılmaz; uzun sol liste sınırlı yükseklikte kendi içinde kayar. 180 px ≈ başlık + sekmeler + boşluklar. */
+html[data-fit=tight] .wrap{padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px))}
+html[data-fit=tight] .two>.side{max-height:calc(100dvh - 180px);overflow:auto;overscroll-behavior:contain}
+html[data-layout=narrow] .side{width:auto}
+html[data-layout=narrow] .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-layout=narrow] .tile.wide{grid-column:span 2}
+html[data-layout=narrow] .tile.tslm{grid-column:auto}
+html[data-layout=narrow] .grid2{grid-template-columns:1fr}
+html[data-layout=narrow] .uretim .side{display:contents}
+html[data-layout=narrow] .uretim .codes-blk{order:1}
+html[data-layout=narrow] .uretim .main{order:2}
+html[data-layout=narrow] .uretim .today-blk{order:3}
+html[data-layout=narrow] .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-layout=narrow] .fgrid{grid-template-columns:1fr}
+html[data-layout=narrow] .tr4,html[data-layout=narrow] .tr5,html[data-layout=narrow] .tr6{padding:8px 8px;font-size:calc(19px * var(--s));gap:4px}
+html[data-layout=narrow] .tr3{font-size:calc(20px * var(--s))}
+html[data-layout=narrow] .tr{padding:10px 10px}
+html[data-layout=narrow] .tr .c{font-size:calc(30px * var(--s))}html[data-layout=narrow] .tr .n{font-size:calc(26px * var(--s))}html[data-layout=narrow] .tr .n.k{font-size:calc(28px * var(--s))}
 </style>
 </head>
 <body>
@@ -631,7 +644,7 @@ const numOf = v => {
 };
 
 // ---------- Ekrana göre boyut ----------
-const UI = { mult: 1, auto: 1, w: 0, h: 0, hw: 0, hMax: 0, s: '' };
+const UI = { mult: 1, auto: 1, w: 0, h: 0, hw: 0, hMax: 0, s: '', wide: null };
 try { const v = parseFloat(localStorage.getItem('dfYazi')); if (v >= 0.8 && v <= 1.4) UI.mult = v; } catch (e) {}
 function autoScale() {
   const w = window.innerWidth || 940;
@@ -639,18 +652,27 @@ function autoScale() {
   // Her değişimde yazı büyüyüp küçülmesin diye aynı genişlikte görülen en büyük yükseklik kullanılır; genişlik değişince (döndürme, katlama) sıfırlanır.
   if (w !== UI.hw) { UI.hw = w; UI.hMax = 0; }
   const h = UI.hMax = Math.max(UI.hMax || 0, window.innerHeight || 900);
-  // Tasarım Galaxy Z Fold 8 Ultra iç ekranına göre (2256×2504 fiziksel, tarayıcıda ≈940 px genişlik, kareye yakın): orada 1.
-  // Fold 6 iç ekranı (≈904 px) 0,98; dar telefonda küçülür, tablette biraz büyür. Genişlik boşa gitmesin diye 880-1100 arası akışkan.
-  const sw = w <= 940 ? 0.72 + Math.max(0, w - 360) * (0.28 / 580) : Math.min(1.14, 1 + (w - 940) * (0.14 / 360));
-  const sh = Math.max(0.7, Math.min(1.14, h / 860)); // yatay telefonda yüksekliğe göre de küçült
+  // Tasarım Galaxy Z Fold 8 Ultra iç ekranına göre: tarayıcı 752×749 CSS px bildirir (Ayarlar'da ölçüldü), orada ölçek 1.
+  // 360 px dar telefonda 0,74; masaüstünde en çok 1,14. Yükseklik 700 px altındaysa (yatay telefon) ona göre de küçülür.
+  const sw = w <= 752 ? 0.74 + Math.max(0, w - 360) * (0.26 / 392) : Math.min(1.14, 1 + (w - 752) * (0.14 / 400));
+  const sh = Math.max(0.72, Math.min(1.14, h / 700));
   return Math.max(0.68, Math.min(sw, sh));
 }
 function applyScale() {
   UI.auto = autoScale(); UI.w = window.innerWidth; UI.h = window.innerHeight;
   const s = (UI.auto * UI.mult).toFixed(3);
-  if (s === UI.s) return; // kaydırmada yükseklik değişti ama ölçek aynı: yeniden çizme
-  UI.s = s;
+  // Düzen: ekran kareye yakınsa (Fold iç ekranı, tablet, yatay telefon) sol seçim / sağ giriş; dar dikey ekranda üst-alt.
+  // Yükseklik için hMax kullanılır: adres çubuğu gizlenince ya da klavye açılınca düzen değişmez.
+  const w = UI.w || 752;
+  const wide = w >= 700 && w / UI.hMax >= 0.85;
+  if (s === UI.s && wide === UI.wide) return; // kaydırmada yükseklik değişti ama ölçek ve düzen aynı: yeniden çizme
+  UI.s = s; UI.wide = wide;
+  // Sıkı düzen: iç ekran gibi geniş ama alçak (820 px altı) ekranda yükseklikler %76'ya iner ki panel kaydırmadan sığsın
+  const tight = wide && UI.hMax < 820;
   document.documentElement.style.setProperty('--s', s);
+  document.documentElement.style.setProperty('--v', tight ? '0.76' : '1');
+  document.documentElement.dataset.layout = wide ? 'wide' : 'narrow';
+  document.documentElement.dataset.fit = tight ? 'tight' : 'normal';
   if (typeof emit === 'function') emit();
 }
 function setMult(v) { UI.mult = v; try { localStorage.setItem('dfYazi', String(v)); } catch (e) {} applyScale(); }
@@ -954,7 +976,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.7.1 · 20.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.8 · 20.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -999,11 +1021,10 @@ function Uretim({ go }) {
   const gunAd = ['Bugün', 'Dün', '2 gün önce'];
   return html`<div class="wrap">
     <${Top} title="Üretim Gir" sub=${fd(day) + ' · ' + kg(total) + ' kg · ' + siparisOzetText(sd)} go=${go}/>
-    <div style="display:flex;flex-direction:column;gap:6px"><div class="lbl">Döner ne zaman yapıldı?</div>
-    <div class="seg" role="group" aria-label="Döner ne zaman yapıldı">${gunAd.map((l, i) => html`<button type="button" class=${'btn small ' + (geri === i ? '' : 'ghost')} aria-pressed=${geri === i} onClick=${() => setGeri(i)}>${l}</button>`)}${geri > 2 ? html`<button type="button" class="btn small" aria-pressed="true">${fd(day)}</button>` : ''}</div></div>
     <div class="two uretim">
       <div class="side">
         <div class="codes-blk" style="display:flex;flex-direction:column;gap:10px">
+        <div class="seg" role="group" aria-label="Döner ne zaman yapıldı">${gunAd.map((l, i) => html`<button type="button" class=${'btn small ' + (geri === i ? '' : 'ghost')} aria-pressed=${geri === i} onClick=${() => setGeri(i)}>${l}</button>`)}${geri > 2 ? html`<button type="button" class="btn small" aria-pressed="true">${fd(day)}</button>` : ''}</div>
         <div class="lbl">1. Şube kodu</div>
         <div class="grid3">${cs.map(x => { const r = sipOf[x.id]; return html`<button type="button" class=${'code' + (x.id === code ? ' on' : '')} aria-pressed=${x.id === code} onClick=${() => setSel(x.id)}>${x.id}${r && r.sip ? html`<small>${r.adet}/${r.sip.adet}</small>` : ''}</button>`; })}</div>
         <div class="lbl" style=${'font-size:calc(18px * var(--s));color:' + (sd.hasOrder && !(row && row.sip) ? '#9A3412' : '#334155')}>${hint}</div>
@@ -1026,7 +1047,7 @@ function Uretim({ go }) {
           <div class="part"><small>Deri kg · %${c.deri}</small><b>${kg(c.deri ? r1(r1(n) - r1(n * c.gogus / 100) - r1(n * c.but / 100)) : 0)}</b></div>
         </div>
         <${Keypad} value=${val} set=${setVal} comma=${true}/>
-        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(30px * var(--s))" disabled=${busy || n <= 0} onClick=${save}>KAYDET</button>
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s) * var(--v)));font-size:calc(30px * var(--s))" disabled=${busy || n <= 0} onClick=${save}>KAYDET</button>
       </div>
     </div>
   </div>`;
@@ -1102,7 +1123,7 @@ function Siparis({ go }) {
         <div class="lbl">3. Bir dönerin hedef kilosu</div>
         <div class="disp"><b>${val || '0'}</b><span>kg</span></div>
         <${Keypad} value=${val} set=${setVal} comma=${true}/>
-        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(28px * var(--s))" disabled=${busy || n <= 0} onClick=${add}>SİPARİŞE EKLE</button>
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s) * var(--v)));font-size:calc(28px * var(--s))" disabled=${busy || n <= 0} onClick=${add}>SİPARİŞE EKLE</button>
       </div>
     </div>
     <h2 style="margin-top:6px">Usta listesi · ${fd(day)} · her satır 1 döner</h2>
@@ -1455,7 +1476,7 @@ function Teslimat({ go }) {
         <div class="banner" style=${ad.actualKg == null ? '' : 'background:#F0FDFA;border-color:#0F766E;color:#134E4A'}>${ad.actualKg == null ? '✗ Tartılan kilo girilmedi' : '✓ Tartılan kilo: ' + kgA(ad.actualKg) + ' kg'}</div>
         ${canPhoto ? html`<div class="banner" style=${ad.photoId ? 'background:#F0FDFA;border-color:#0F766E;color:#134E4A' : ''}>${ad.photoId ? '✓ Fiş fotoğrafı var' : '✗ Fiş fotoğrafı çekilmedi'}</div>` : ''}
       </div>
-      <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s)));font-size:calc(30px * var(--s))" onClick=${() => { setAsk(null); openTart({ id: ask }); }}>Eksikleri tamamla</button>
+      <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(30px * var(--s))" onClick=${() => { setAsk(null); openTart({ id: ask }); }}>Eksikleri tamamla</button>
       <button type="button" class="btn ghost small" style="align-self:center;border-width:2px" onClick=${() => teslim({ id: ask }, true)}>${ad.actualKg == null ? 'Yine de liste kilosuyla (' + kg(ad.kg) + ' kg) teslim et' : 'Fotoğrafsız teslim et'}</button>
     <//>` : ''}
     ${big ? html`<${Modal} close=${() => setBig(null)}><img src=${photoSrc(big)} alt="Döner etiketi" style="width:100%;border-radius:16px"/><button type="button" class="btn ghost" onClick=${() => setBig(null)}>Kapat</button><//>` : ''}
@@ -1590,8 +1611,8 @@ function Defter({ go, pay }) {
       <div class="side">
         <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74"><small style="color:#7C2D12">Toplam alacak</small><b style="color:#C2410C;font-size:calc(38px * var(--s))">${tl(total)}</b></div>
         <input class="big" style="height:max(44px, calc(58px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Müşteri ara" placeholder="Ara: ad ya da kod" value=${q} onInput=${e => setQ(e.target.value)}/>
-        <div class="seg" role="group" aria-label="Sıralama">${[['kod', 'Kod'], ['borc', 'Borç'], ['ekstre', ekstreN ? 'Ekstre · ' + ekstreN : 'Ekstre']].map(([k, l]) => html`<button type="button" class=${'btn small ' + (sort === k ? (k === 'ekstre' && ekstreN ? 'orange' : '') : 'ghost')} aria-pressed=${sort === k} style="min-height:max(44px, calc(52px * var(--s)));font-size:calc(18px * var(--s))" onClick=${() => setSort(k)}>${l}</button>`)}</div>
-        ${listed.length ? listed.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); setLim(12); if (mode === 'ekstre') setMode('detay'); }}>
+        <div class="seg" role="group" aria-label="Sıralama">${[['kod', 'Kod'], ['borc', 'Borç'], ['ekstre', ekstreN ? 'Ekstre · ' + ekstreN : 'Ekstre']].map(([k, l]) => html`<button type="button" class=${'btn small ' + (sort === k ? (k === 'ekstre' && ekstreN ? 'orange' : '') : 'ghost')} aria-pressed=${sort === k} style="min-height:max(44px, calc(52px * var(--s) * var(--v)));font-size:calc(18px * var(--s))" onClick=${() => setSort(k)}>${l}</button>`)}</div>
+        ${listed.length ? listed.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s) * var(--v)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); setLim(12); if (mode === 'ekstre') setMode('detay'); }}>
           <span style="display:flex;flex-direction:column;min-width:0;gap:2px"><span style="font-size:calc(16px * var(--s));font-weight:800;opacity:.85">${custLabel(x)}</span><span style="font-size:calc(22px * var(--s));font-weight:700">${x.name}</span>${ekPill(durum[x.id], on)}</span>
           <span style=${'font-size:calc(' + (b === 0 ? '16' : '23') + 'px * var(--s));font-weight:800;white-space:nowrap;color:' + (on ? '#fff' : b === 0 ? '#475569' : '#C2410C')}>${b === 0 ? 'Borcu yok' : tl(b)}</span></button>`; }) : html`<div class="lbl">“${q}” ile eşleşen müşteri yok.</div>`}
       </div>
@@ -1601,10 +1622,10 @@ function Defter({ go, pay }) {
         ${mode === 'detay' ? html`
           <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74;padding:18px 22px"><small style="color:#7C2D12">Bize borcu</small><b style="color:#C2410C;font-size:calc(62px * var(--s));letter-spacing:-1px">${tl(bal)}</b></div>
           <div class="grid2">
-            <button type="button" class="btn orange" style="min-height:max(44px, calc(96px * var(--s)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${openMal}>+ KANAT / TAVUK</button>
-            <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${() => { setVal(''); setMode('para'); }}>− PARA ALDIM</button>
+            <button type="button" class="btn orange" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${openMal}>+ KANAT / TAVUK</button>
+            <button type="button" class="btn" style="min-height:max(44px, calc(96px * var(--s) * var(--v)));font-size:calc(25px * var(--s));padding:0 10px" onClick=${() => { setVal(''); setMode('para'); }}>− PARA ALDIM</button>
           </div>
-          <button type="button" class=${'btn ' + (ed.durum === 'gecti' || ed.durum === 'zamani' ? 'orange' : 'purple')} style="min-height:max(44px, calc(84px * var(--s)));justify-content:space-between;padding:0 22px" onClick=${openEkstre}>
+          <button type="button" class=${'btn ' + (ed.durum === 'gecti' || ed.durum === 'zamani' ? 'orange' : 'purple')} style="min-height:max(44px, calc(84px * var(--s) * var(--v)));justify-content:space-between;padding:0 22px" onClick=${openEkstre}>
             <span style="font-size:calc(23px * var(--s))">EKSTRE / HESAP ÖZETİ</span><span style="font-size:calc(17px * var(--s));font-weight:700;text-align:right;line-height:1.2">${edText}<br/>vade ${vade} gün</span></button>
           <button type="button" class="btn ghost small" style="align-self:flex-start" onClick=${() => { setVal(''); setSign(1); setNote(moves.length ? 'Düzeltme' : 'Devreden borç'); setMode('duzelt'); }}>± Devir / düzeltme</button>
           <div class="lbl">Son hareketler</div>
@@ -1618,7 +1639,7 @@ function Defter({ go, pay }) {
         ${mode === 'para' ? html`
           <div class="lbl" style="color:#C2410C">Borcu: ${tl(bal)}</div>
           <div class="disp"><b>${n ? nf2.format(n) : '0'}</b><span>₺</span></div>
-          <div class="grid2">${['Nakit', 'Havale / EFT'].map(x => html`<button type="button" class=${'btn small ' + (type === x ? '' : 'ghost')} aria-pressed=${type === x} style="min-height:max(44px, calc(64px * var(--s)))" onClick=${() => setType(x)}>${x}</button>`)}</div>
+          <div class="grid2">${['Nakit', 'Havale / EFT'].map(x => html`<button type="button" class=${'btn small ' + (type === x ? '' : 'ghost')} aria-pressed=${type === x} style="min-height:max(44px, calc(64px * var(--s) * var(--v)))" onClick=${() => setType(x)}>${x}</button>`)}</div>
           <${Keypad} value=${val} set=${setVal} thousand=${true}/>
           <label class="fld"><span class="lbl">Not (isteğe bağlı)</span><input class="big" value=${payNote} onInput=${e => setPayNote(e.target.value)} placeholder="Örn. Enpara'ya geldi"/></label>
           <div class="grid3">
@@ -1743,7 +1764,7 @@ function Musteriler({ go }) {
     <${Top} title="Müşteriler" go=${go}/>
     <div class="two">
       <div class="side">
-        <button type="button" class="btn ghost small" style="border:3px dashed #6D28D9;color:#5B21B6;background:#F5F3FF;min-height:max(44px, calc(68px * var(--s)))" onClick=${() => { setSel(null); setDraft(blank()); }}>+ Yeni Müşteri</button>
+        <button type="button" class="btn ghost small" style="border:3px dashed #6D28D9;color:#5B21B6;background:#F5F3FF;min-height:max(44px, calc(68px * var(--s) * var(--v)))" onClick=${() => { setSel(null); setDraft(blank()); }}>+ Yeni Müşteri</button>
         <button type="button" class="btn ghost small" onClick=${() => { setSel(null); setDraft({ ...blank(), kodsuz: true, urun: 'Kanat' }); }}>+ Kodsuz müşteri (sadece isim)</button>
         ${cs.map(x => html`<button type="button" class=${'row pick' + (x.id === sel ? ' on' : '')} aria-pressed=${x.id === sel} onClick=${() => { setSel(x.id); setDraft(toDraft(x)); }}><span style="display:flex;align-items:center;gap:12px;min-width:0"><span class="badge">${custLabel(x)}</span><span>${x.name}</span></span></button>`)}
       </div>
@@ -1774,7 +1795,7 @@ function Musteriler({ go }) {
           <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Telefon (WhatsApp ekstre)</span><input class="big" type="tel" inputmode="tel" value=${draft.telefon} onInput=${e => setF('telefon', e.target.value)} placeholder="05xx xxx xx xx"/></label>
           <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="vade-gun">Ekstre vadesi (gün)</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="vade-gun" class="big" type="number" inputmode="numeric" min="1" style="width:calc(130px * var(--s))" value=${draft.vadeGun} placeholder=${String(VADE_VARSAYILAN)} onInput=${e => setF('vadeGun', e.target.value)}/>
-              ${[15, 30, 45, 60].map(n => html`<button type="button" class=${'btn small ' + ((parseInt(draft.vadeGun, 10) || VADE_VARSAYILAN) === n ? 'purple' : 'ghost')} aria-pressed=${(parseInt(draft.vadeGun, 10) || VADE_VARSAYILAN) === n} style="min-height:max(44px, calc(56px * var(--s)));padding:0 10px;min-width:0" onClick=${() => setF('vadeGun', String(n))}>${n}</button>`)}</div></div>
+              ${[15, 30, 45, 60].map(n => html`<button type="button" class=${'btn small ' + ((parseInt(draft.vadeGun, 10) || VADE_VARSAYILAN) === n ? 'purple' : 'ghost')} aria-pressed=${(parseInt(draft.vadeGun, 10) || VADE_VARSAYILAN) === n} style="min-height:max(44px, calc(56px * var(--s) * var(--v)));padding:0 10px;min-width:0" onClick=${() => setF('vadeGun', String(n))}>${n}</button>`)}</div></div>
         </div>
         <span class="lbl" style="font-size:calc(17px * var(--s))">Boş bırakılırsa ${VADE_VARSAYILAN} gün. Son ekstreden bu kadar gün sonra Ana ekranda ve Defter'de “ekstre zamanı” uyarısı çıkar.</span>
         <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">${draft.kodsuz ? 'Kilo fiyatı (₺/kg, isteğe bağlı)' : 'Kilo fiyatı (₺/kg)'}</span>
@@ -1786,11 +1807,11 @@ function Musteriler({ go }) {
           <button type="button" class="step" aria-label=${l + ' oranını azalt'} onClick=${() => step(f, -1)}>−</button>
           <span class="pct"><span>%</span><input id=${'o-' + f} type="number" inputmode="numeric" min="0" max="100" value=${draft[f]} onInput=${e => setF(f, e.target.value)}/></span>
           <button type="button" class="step" aria-label=${l + ' oranını artır'} onClick=${() => step(f, 1)}>+</button></div>`)}
-        ${draft.kodsuz ? '' : html`<div role="status" style=${'display:flex;justify-content:space-between;align-items:center;min-height:max(44px, calc(64px * var(--s)));padding:0 20px;border-radius:16px;font-size:calc(26px * var(--s));font-weight:800;' + (total === 100 ? 'background:#DBEAFE;color:#1E3A8A' : 'background:#FFF7ED;color:#9A3412;border:2px solid #C2410C')}>
+        ${draft.kodsuz ? '' : html`<div role="status" style=${'display:flex;justify-content:space-between;align-items:center;min-height:max(44px, calc(64px * var(--s) * var(--v)));padding:0 20px;border-radius:16px;font-size:calc(26px * var(--s));font-weight:800;' + (total === 100 ? 'background:#DBEAFE;color:#1E3A8A' : 'background:#FFF7ED;color:#9A3412;border:2px solid #C2410C')}>
           <span style="font-size:calc(21px * var(--s))">Toplam</span><span>${total === 100 ? '%100 ✓' : '%' + total + ' · ' + (diff > 0 ? '%' + diff + ' eksik' : '%' + (-diff) + ' fazla')}</span></div>`}
         ${!draft.kodsuz && total === 100 ? (() => { const st = settingsOn(S.settings, t); const km = customerKgCost(vals, costModel(st, kemiksizFor(DATA(), t).val), st); return html`<div class="lbl">Bu oranla kg maliyeti ${tl(r2(km))}${price > 0 ? html` · kâr <b style=${'color:' + (price - km < 0 ? '#9A3412' : '#0F766E')}>${sgn(r2(price - km), tl)}/kg</b>` : ''}</div>`; })() : ''}
         ${problem ? html`<div class="lbl" style="color:#9A3412">${problem}</div>` : ''}
-        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(30px * var(--s))" disabled=${!!problem || busy} onClick=${save}>KAYDET</button>
+        <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s) * var(--v)));font-size:calc(30px * var(--s))" disabled=${!!problem || busy} onClick=${save}>KAYDET</button>
         ${hist.length ? html`<div class="lbl" style="margin-top:6px">Fiyat geçmişi</div>
           ${hist.map((h, i) => html`<div class="mv"><b>${tl(h.price)} / kg</b><small style="font-size:calc(18px * var(--s))">${i === 0 ? fd(h.from) + ' tarihinden beri' : fd(h.from) + ' – ' + fd(shiftDay(hist[i - 1].from, -1))}</small></div>`)}` : ''}
       </div>
@@ -2012,7 +2033,7 @@ function Mal({ go }) {
       <div class="chips">${allNames.map(n => html`<button type="button" class=${'btn small ' + (pf.isciler.includes(n) ? 'orange' : 'ghost')} aria-pressed=${pf.isciler.includes(n)} onClick=${() => toggleIsci(n)}>${pf.isciler.includes(n) ? '✓ ' : ''}${n}</button>`)}</div>
       <div style="display:flex;gap:8px;align-items:flex-end">
         <label class="fld" style="flex:1"><span class="lbl" style="font-size:calc(16px * var(--s))">Yeni işçi adı</span><input class="big" value=${pf.yeni} onInput=${e => PF('yeni', e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addIsci(); } }}/></label>
-        <button type="button" class="btn ghost small" style="min-height:max(44px, calc(72px * var(--s)))" onClick=${addIsci}>Ekle</button>
+        <button type="button" class="btn ghost small" style="min-height:max(44px, calc(72px * var(--s) * var(--v)))" onClick=${addIsci}>Ekle</button>
       </div>
       <div class="card" style="background:#F1F5F9;gap:4px">
         ${kvRow('Et (göğüs+but) standarda göre', prev.etOran == null ? (prev.gir.length ? 'standart girilmedi' : '—') : sgn(prev.etFark, kg) + ' kg (' + sgn(prev.etOran, pct) + '%)', false, prev.etOran != null && prev.etOran < -s.fireEsik ? '#9A3412' : '#0F766E')}
@@ -2311,7 +2332,7 @@ function Oranlar({ go }) {
       <${Fld} label="Terazi toleransı" unit="kg" value=${d.tolerans} set=${v => F('tolerans', v)}/>
       <${Fld} label="Fire uyarı eşiği (standarttan sapma)" unit="%" value=${d.fireEsik} set=${v => F('fireEsik', v)}/>
       <${Fld} label="Sipariş toleransı (döner başına)" unit="kg" value=${d.siparisTol} set=${v => F('siparisTol', v)} hint="Bu kadar kilo farkı Tam sayılır"/></div>`)}
-    <button type="button" class="btn" style="min-height:max(44px, calc(92px * var(--s)));font-size:calc(30px * var(--s));position:sticky;bottom:12px;box-shadow:0 6px 20px rgba(15,23,42,.25)" disabled=${busy || payErr || rangeErr} onClick=${save}>${rangeErr ? 'Geçersiz değer var' : payErr ? 'Göğüs + but payı %100 olmalı' : 'KAYDET (bugünden geçerli)'}</button>
+    <button type="button" class="btn" style="min-height:max(44px, calc(92px * var(--s) * var(--v)));font-size:calc(30px * var(--s));position:sticky;bottom:12px;box-shadow:0 6px 20px rgba(15,23,42,.25)" disabled=${busy || payErr || rangeErr} onClick=${save}>${rangeErr ? 'Geçersiz değer var' : payErr ? 'Göğüs + but payı %100 olmalı' : 'KAYDET (bugünden geçerli)'}</button>
     ${hist.length ? html`<div class="lbl">Kayıtlı ayar tarihleri: ${hist.map(h => fd(h.from)).join(' · ')}</div>` : ''}
   </div>`;
 }
