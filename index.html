@@ -33,6 +33,7 @@ h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
 .card{background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:14px}
 .two{display:flex;gap:24px;align-items:flex-start}
 .side{width:calc(300px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
+.side.w400{width:calc(400px * var(--s))} /* tablo taşıyan sol sütun (Sayım) */
 /* Düzen: Fold 8 Ultra iç ekranı tarayıcıya 752×749 px bildirir (ölçek 1, kareye yakın) → iki sütun: sol 300 px seçim, sağ ≈390 px giriş.
    Sütun/üst-alt kararı JS'te verilir (html[data-layout]); media query kullanılmaz ki adres çubuğu gizlenince yükseklik değişse de düzen zıplamasın. */
 @media (min-width:1000px){.side{width:calc(360px * var(--s))}.two{gap:22px}.tiles .tile{min-height:calc(230px * var(--s))}.stats{gap:14px}.modal{width:min(760px,100%)}}
@@ -2095,7 +2096,9 @@ function Marine({ go }) {
   return html`<div class="wrap">
     <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg marine'} go=${go} right=${html`<${DayNav} day=${day} setDay=${setDay}/>`}/>
     ${exampleBanner(s)}
-    <button type="button" class="btn" onClick=${open}>+ Marinasyon partisi</button>
+    <div class="two">
+      <div class="side">
+    <button type="button" class=${'btn ' + (form ? 'small' : '')} aria-pressed=${!!form} onClick=${open}>+ Marinasyon partisi</button>
     ${cigG + cigB > 0 ? html`<div class="lbl">Bu gün hazır çiğ et (işlenen + kemiksiz gelen): göğüs ${kg(cigG)} kg · but ${kg(cigB)} kg · marine edilen: ${kg(doneG)} + ${kg(doneB)} kg</div>` : ''}
     ${list.map(x => { const c = marineCalc(x, s, m); return html`<div class="card" style="gap:6px">
       ${kvRow('Giren göğüs / but', kg(x.gogus) + ' + ' + kg(x.but) + ' kg')}
@@ -2105,7 +2108,9 @@ function Marine({ go }) {
       ${kvRow('Toplam çıkan', kg(c.toplam) + ' kg', true, '#0E7490')}
       <button type="button" class="del-x" style="align-self:flex-end;height:max(44px, calc(56px * var(--s)))" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></div>`; })}
     ${!list.length ? html`<div class="card"><h2>Bu gün marinasyon yok</h2><div class="lbl">Parti girince karışımın kaç kilo olacağı ve hangi malzemeden ne kadar konacağı hesaplanır.</div></div>` : ''}
-    ${form ? html`<${Modal} close=${() => setForm(null)}>
+      </div>
+      <div class="main card">
+    ${form ? html`<div style="display:contents">
       <h2>Marinasyon partisi · ${fd(day)}</h2>
       <div class="fgrid">
         <${Fld} label="Giren çiğ göğüs" unit="kg" value=${form.gogus} set=${v => F('gogus', v)}/>
@@ -2120,7 +2125,9 @@ function Marine({ go }) {
       </div>
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setForm(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
-    <//>` : ''}
+    </div>` : html`<div class="lbl">"+ Marinasyon partisi" ile giren çiğ et ve deriyi yaz; karışım ve malzemeler burada hesaplanır.</div>`}
+      </div>
+    </div>
   </div>`;
 }
 
@@ -2151,10 +2158,9 @@ function Sayim({ go }) {
   const durum = { denk: ['DENK ✓', '#134E4A', '#F0FDFA'], eksik: ['ET EKSİK: kayıp / çalıntı kontrol et', '#9A3412', '#FFF7ED'], fazla: ['ET FAZLA: dönerler eksik gramajlı olabilir', '#1E3A8A', '#DBEAFE'], sayimYok: ['Sayım girilmedi, fark hesaplanamaz', '#334155', '#F1F5F9'], acilis: ['Açılış devri günü: sayım başlangıç kabul edildi', '#334155', '#F1F5F9'] }[r.durum];
   return html`<div class="wrap">
     <${Top} title="Gün Sonu Terazisi" sub=${fd(day) + ' · marine et dengesi'} go=${go} back="hesaplar" right=${html`<${DayNav} day=${day} setDay=${(d) => { setDay(d); setF(null); }}/>`}/>
-    ${firstDay ? html`<div class="card"><h2>Açılış devri</h2><div class="lbl">İlk gün: dünden elde kalan marine eti gir. Sonraki günlerde devir kendiliğinden gelir.</div>
-      <div class="fgrid"><${Fld} label="Göğüs" unit="kg" value=${ac.gogus} set=${v => setAc(a => ({ ...a, gogus: v }))}/><${Fld} label="But" unit="kg" value=${ac.but} set=${v => setAc(a => ({ ...a, but: v }))}/><${Fld} label="Deri" unit="kg" value=${ac.deri} set=${v => setAc(a => ({ ...a, deri: v }))}/></div>
-      <button type="button" class="btn ghost" onClick=${saveAc}>Açılış devrini kaydet</button></div>` : ''}
-    <div class="tbl">
+    <div class="two">
+      <div class="side w400">
+    <div class="tbl" style="font-size:calc(19px * var(--s))">
       <div class="tr4 head"><span></span><span>Göğüs</span><span>But</span><span>Deri</span><span>Toplam</span></div>
       ${line('Devir (dünden)', r.devir)}
       ${line('+ Bugün marine', r.plus)}
@@ -2164,9 +2170,13 @@ function Sayim({ go }) {
     </div>
     <div class="banner" style=${'font-size:calc(24px * var(--s));color:' + durum[1] + ';background:' + durum[2] + ';border-color:' + durum[1]}>${durum[0]}${r.say && r.fark != null ? ' · fark ' + sgn(r.fark, kg) + ' kg (tolerans ' + kg(s.tolerans) + ' kg)' : ''}</div>
     <div class="lbl">Dönerde kullanılan: bugün üretilen ${r.used.adet} döner (${kg(r.used.kg)} kg) × her müşterinin oranı.</div>
-    <div class="card">
+      </div>
+      <div class="main card">
+      ${firstDay ? html`<div style="display:contents"><h2>Açılış devri</h2><div class="lbl">İlk gün: dünden elde kalan marine eti gir. Sonraki günlerde devir kendiliğinden gelir.</div>
+      <div class="fgrid" style="grid-template-columns:1fr"><${Fld} label="Göğüs" unit="kg" value=${ac.gogus} set=${v => setAc(a => ({ ...a, gogus: v }))}/><${Fld} label="But" unit="kg" value=${ac.but} set=${v => setAc(a => ({ ...a, but: v }))}/><${Fld} label="Deri" unit="kg" value=${ac.deri} set=${v => setAc(a => ({ ...a, deri: v }))}/></div>
+      <button type="button" class="btn ghost" onClick=${saveAc}>Açılış devrini kaydet</button></div>` : ''}
       <h2>Gün sonu sayımı</h2>
-      <div class="fgrid">
+      <div class="fgrid" style="grid-template-columns:1fr">
         <${Fld} label="Göğüs" unit="kg" value=${form.gogus} set=${v => setK('gogus', v)} hint=${'Hesap: ' + kg(r.hesap.gogus)}/>
         <${Fld} label="But" unit="kg" value=${form.but} set=${v => setK('but', v)} hint=${'Hesap: ' + kg(r.hesap.but)}/>
         <${Fld} label="Deri" unit="kg" value=${form.deri} set=${v => setK('deri', v)} hint=${'Hesap: ' + kg(r.hesap.deri)}/>
@@ -2174,6 +2184,7 @@ function Sayim({ go }) {
       <div class="grid3">${cur ? html`<button type="button" class="btn ghost" onClick=${delSayim}>Sayımı sil</button>` : html`<span></span>`}
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>SAYIMI KAYDET</button></div>
       <div class="lbl" style="font-size:calc(16px * var(--s))">Yarına devir: sayım girildiyse sayımdan, girilmediyse hesaptan (${kg(tot(r.kalan))} kg).</div>
+      </div>
     </div>
   </div>`;
 }
