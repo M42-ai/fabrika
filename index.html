@@ -631,10 +631,14 @@ const numOf = v => {
 };
 
 // ---------- Ekrana göre boyut ----------
-const UI = { mult: 1, auto: 1, w: 0, h: 0 };
+const UI = { mult: 1, auto: 1, w: 0, h: 0, hw: 0, hMax: 0, s: '' };
 try { const v = parseFloat(localStorage.getItem('dfYazi')); if (v >= 0.8 && v <= 1.4) UI.mult = v; } catch (e) {}
 function autoScale() {
-  const w = window.innerWidth || 940, h = window.innerHeight || 900;
+  const w = window.innerWidth || 940;
+  // Yükseklik kaydırırken değişir (Chrome ve APK adres/araç çubuğunu gizler-gösterir) ve klavye açılınca küçülür.
+  // Her değişimde yazı büyüyüp küçülmesin diye aynı genişlikte görülen en büyük yükseklik kullanılır; genişlik değişince (döndürme, katlama) sıfırlanır.
+  if (w !== UI.hw) { UI.hw = w; UI.hMax = 0; }
+  const h = UI.hMax = Math.max(UI.hMax || 0, window.innerHeight || 900);
   // Tasarım Galaxy Z Fold 8 Ultra iç ekranına göre (2256×2504 fiziksel, tarayıcıda ≈940 px genişlik, kareye yakın): orada 1.
   // Fold 6 iç ekranı (≈904 px) 0,98; dar telefonda küçülür, tablette biraz büyür. Genişlik boşa gitmesin diye 880-1100 arası akışkan.
   const sw = w <= 940 ? 0.72 + Math.max(0, w - 360) * (0.28 / 580) : Math.min(1.14, 1 + (w - 940) * (0.14 / 360));
@@ -643,7 +647,10 @@ function autoScale() {
 }
 function applyScale() {
   UI.auto = autoScale(); UI.w = window.innerWidth; UI.h = window.innerHeight;
-  document.documentElement.style.setProperty('--s', (UI.auto * UI.mult).toFixed(3));
+  const s = (UI.auto * UI.mult).toFixed(3);
+  if (s === UI.s) return; // kaydırmada yükseklik değişti ama ölçek aynı: yeniden çizme
+  UI.s = s;
+  document.documentElement.style.setProperty('--s', s);
   if (typeof emit === 'function') emit();
 }
 function setMult(v) { UI.mult = v; try { localStorage.setItem('dfYazi', String(v)); } catch (e) {} applyScale(); }
@@ -947,7 +954,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.7 · 20.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.7.1 · 20.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
