@@ -181,7 +181,7 @@ function nextPrices(prices, newPrice, day) {
 }
 function balanceOf(moves, code) {
   let b = 0;
-  Object.values(moves).forEach(m => { if (m.code === code) b += m.kind === 'mal' ? m.amount : m.kind === 'duzeltme' ? m.amount : -m.amount; }); // düzeltme işaretli tutulur
+  Object.values(moves).forEach(m => { if (m.code === code && m.kind !== 'not') b += m.kind === 'mal' ? m.amount : m.kind === 'duzeltme' ? m.amount : -m.amount; }); // düzeltme işaretli tutulur
   return r2(b);
 }
 // Teslimde hesaba yazılacak tutar: HEDEF müşterinin teslim günündeki fiyatı × dönerin kilosu.
@@ -543,16 +543,23 @@ function acikDonerler(siparis, doners, customers, today, n) {
 }
 // Tedarikçi kayıtlarının özeti (tur: deri | iscilik | malzeme | odeme)
 function tedarikOzet(list) {
-  const o = { deriKg: 0, deriTL: 0, iscilikKg: 0, iscilikTL: 0, malzemeTL: 0, alim: 0, odeme: 0 };
+  const o = { deriKg: 0, deriTL: 0, iscilikKg: 0, iscilikTL: 0, malzemeTL: 0, alim: 0, odeme: 0, duzeltme: 0 };
   (list || []).forEach(x => {
     const t = Number(x.tutar) || 0, m = Number(x.miktar) || 0;
     if (x.tur === 'odeme') { o.odeme += t; return; }
+    if (x.tur === 'duzeltme') { o.duzeltme += t; return; } // işaretli: + borç ekler, − borç düşer
     if (x.tur === 'deri') { o.deriKg += m; o.deriTL += t; } else if (x.tur === 'iscilik') { o.iscilikKg += m; o.iscilikTL += t; } else o.malzemeTL += t;
     o.alim += t;
   });
   Object.keys(o).forEach(k => { o[k] = r2(o[k]); });
-  o.bakiye = r2(o.alim - o.odeme);
+  o.bakiye = r2(o.alim + o.duzeltme - o.odeme);
   return o;
+}
+// Şahsi defter: 'borc' kişinin bize borcunu artırır, 'odeme' azaltır, 'duzeltme' işaretli, 'not' etkisiz.
+function sahsiBakiye(list) {
+  let b = 0;
+  (list || []).forEach(x => { const t = Number(x.tutar) || 0; if (x.tur === 'borc') b += t; else if (x.tur === 'odeme') b -= t; else if (x.tur === 'duzeltme') b += t; });
+  return r2(b);
 }
 // LOGIC-END
 
@@ -595,8 +602,8 @@ addEventListener('resize', applyScale);
 addEventListener('orientationchange', applyScale);
 
 // ---------- Veri katmanı ----------
-const S = { mode: 'loading', db: null, assets: null, customers: {}, doners: {}, moves: {}, settings: {}, kesim: {}, mal: {}, parti: {}, siparis: {}, tedarik: {}, marine: {}, sayim: {}, config: {}, loaded: {}, note: '', toast: '' };
-const COLS = ['customers', 'doners', 'moves', 'settings', 'kesim', 'mal', 'parti', 'siparis', 'tedarik', 'marine', 'sayim', 'config'];
+const S = { mode: 'loading', db: null, assets: null, customers: {}, doners: {}, moves: {}, settings: {}, kesim: {}, mal: {}, parti: {}, siparis: {}, tedarik: {}, marine: {}, sayim: {}, config: {}, sahsi: {}, kartlar: {}, loaded: {}, note: '', toast: '' };
+const COLS = ['customers', 'doners', 'moves', 'settings', 'kesim', 'mal', 'parti', 'siparis', 'tedarik', 'marine', 'sayim', 'config', 'sahsi', 'kartlar'];
 const subs = new Set();
 const emit = () => subs.forEach(f => f());
 function useStore() { const [, set] = useState(0); useEffect(() => { const f = () => set(x => x + 1); subs.add(f); f(); return () => subs.delete(f); }, []); return S; }
@@ -698,7 +705,7 @@ async function clearSample() {
 async function loadAll() {
   const fresh = {}; COLS.forEach(c => { fresh[c] = {}; });
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await sb.from('docs').select('col,id,data').range(from, from + 999);
+    const { data, error } = await sb.from('docs').select('col,id,data').neq('col', 'arsiv').order('col').order('id').range(from, from + 999); // arşiv büyük: sadece Arşiv ekranında, istenince yüklenir
     if (error) throw error;
     data.forEach(r => { if (fresh[r.col]) fresh[r.col][r.id] = norm(r.col, r.data); });
     if (data.length < 1000) break;
@@ -757,6 +764,9 @@ function Login() {
 }
 
 const custList = () => Object.entries(S.customers).map(([id, c]) => ({ id, ...c })).sort((a, b) => a.num - b.num);
+// Döner üretilen (kodlu) müşteriler; kodsuz olanlar (kanat, parça alanlar) üretim ekranlarına girmez
+const dkList = () => custList().filter(c => !c.kodsuz);
+const custLabel = c => (c.kodsuz ? c.urun || 'Kodsuz' : c.id);
 const donerList = () => Object.entries(S.doners).map(([id, d]) => ({ id, ...d }));
 const nameOf = code => (S.customers[code] ? S.customers[code].name : '');
 
@@ -768,7 +778,7 @@ const GROUPS = [
   { title: 'Üretim', tabs: [['siparis', 'Sipariş'], ['uretim', 'Üretim Gir'], ['kontrol', 'Kontrol']] },
   { title: 'Stok ve teslimat', tabs: [['stok', 'Döner Stok'], ['teslimat', 'Teslimat']] },
   { title: 'Et', tabs: [['mal', 'Mal & İşçi'], ['marine', 'Marinasyon'], ['sayim', 'Terazi']] },
-  { title: 'Müşteriler', tabs: [['defter', 'Defter'], ['musteriler', 'Kod · Oran · Fiyat'], ['tedarik', 'Tedarikçi']] },
+  { title: 'Müşteriler', tabs: [['defter', 'Defter'], ['musteriler', 'Kod · Oran · Fiyat'], ['tedarik', 'Tedarikçi'], ['sahsi', 'Şahsi & Kart'], ['arsiv', 'Arşiv']] },
   { title: 'Hesap', tabs: [['maliyet', 'Maliyet & Kâr'], ['rapor', 'Rapor'], ['oranlar', 'Oranlar']] }
 ];
 function Top({ title, sub, go, right, tabs = true }) {
@@ -844,7 +854,7 @@ function Ana({ go }) {
       <button type="button" class="tile wide" style="background:#1E3A8A" onClick=${() => go('uretim')}>${ico('<path d="M12 5v14"/><path d="M5 12h14"/>')}<span style="font-size:calc(44px * var(--s))">Üretim<small>Sipariş · Üretim gir · Kontrol</small></span></button>
       <button type="button" class="tile" style="background:#0F766E" onClick=${() => go('stok')}>${ico('<rect x="1" y="6" width="14" height="10" rx="1"/><path d="M15 9h4l3 3v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>')}<span>Stok & Teslimat<small>${yolda.length ? yolda.length + ' döner teslimat bekliyor' : 'Bekleyen teslimat yok'}</small></span></button>
       <button type="button" class="tile" style="background:#B45309" onClick=${() => go('mal')}>${lk}${ico('<path d="M8 3h8l-1 5a5 5 0 1 1-6 0z"/><path d="M8 14h8"/>')}<span>Et<small>Mal & işçi · Marinasyon · Terazi</small></span></button>
-      <button type="button" class="tile" style="background:#C2410C" onClick=${() => go('defter')}>${lk}${ico('<path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M8 9h6"/><path d="M8 13h6"/><path d="M18 8h2v12"/>')}<span>Müşteri & Tedarikçi<small>Defter · Fiyat · Nur Döner</small></span></button>
+      <button type="button" class="tile" style="background:#C2410C" onClick=${() => go('defter')}>${lk}${ico('<path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M8 9h6"/><path d="M8 13h6"/><path d="M18 8h2v12"/>')}<span>Müşteri & Tedarikçi<small>Defter · Tedarikçi · Şahsi · Arşiv</small></span></button>
       <button type="button" class="tile" style="background:#0F172A" onClick=${() => go('maliyet')}>${lk}${ico('<path d="M4 19h16"/><path d="M7 15v-4"/><path d="M12 15V7"/><path d="M17 15v-6"/>')}<span>Hesap<small>Maliyet · Rapor · Oranlar</small></span></button>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -861,7 +871,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.2 · 15.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.3 · 20.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -869,7 +879,7 @@ function Ana({ go }) {
 
 // ---------- Üretim Gir ----------
 function Uretim({ go }) {
-  const cs = custList();
+  const cs = dkList();
   const [sel, setSel] = useState(() => { const k = UI.uretimKod; UI.uretimKod = null; return k && S.customers[k] ? k : (cs[0] ? cs[0].id : null); });
   const [val, setVal] = useState('');
   const [busy, setBusy] = useState(false);
@@ -941,7 +951,7 @@ function Uretim({ go }) {
 
 // ---------- Sipariş (ustaya giden liste) ----------
 function Siparis({ go }) {
-  const cs = custList();
+  const cs = dkList();
   const t = today(); const yarin = shiftDay(t, 1);
   const [day, setDay] = useState(t);
   const [sel, setSel] = useState(cs[0] ? cs[0].id : null);
@@ -1140,7 +1150,7 @@ function Stok({ go }) {
     setBusy(false);
   };
   const cur = m ? S.doners[m.id] : null;
-  const cs = custList();
+  const cs = dkList();
   const section = (title, sub, byX, codesX, frozen) => html`
     ${title ? html`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px"><h2>${title}</h2><span class="lbl">${sub}</span></div>` : ''}
     ${codesX.map(code => html`<div class="card" style=${'gap:12px;' + (frozen ? 'background:#F1F5F9;border:2px dashed #64748B' : '')}>
@@ -1380,6 +1390,7 @@ function Defter({ go, pay }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [sign, setSign] = useState(1);
   const [note, setNote] = useState('Devreden borç');
+  const [lim, setLim] = useState(12);
   const t = today();
   if (!cs.length) return html`<div class="wrap"><${Top} title="Müşteri Defteri" go=${go}/><div class="card"><h2>Önce müşteri ekle</h2><button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşterilere git</button></div></div>`;
   const code = S.customers[sel] ? sel : cs[0].id;
@@ -1387,7 +1398,11 @@ function Defter({ go, pay }) {
   const bal = balanceOf(S.moves, code);
   const total = r2(cs.reduce((s, x) => s + balanceOf(S.moves, x.id), 0));
   const lp = latestPrice(c);
-  const moves = Object.entries(S.moves).map(([id, mv]) => ({ id, ...mv })).filter(mv => mv.code === code).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 12);
+  const allMoves = Object.entries(S.moves).map(([id, mv]) => ({ id, ...mv })).filter(mv => mv.code === code).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const moves = allMoves.slice(0, lim);
+  // Hareket başlığı: kodsuz müşteride kalem adı (Kanat, Göğüs...), notlar ayrı satırda
+  const mvTitle = mv => mv.kind === 'mal' ? (mv.item || 'Döner') + ' ' + kgA(mv.kg) + ' kg' + (mv.price != null ? ' × ' + tl(mv.price) : '') : mv.kind === 'duzeltme' ? mv.note || 'Düzeltme' : mv.kind === 'not' ? 'Not' : mv.payType ? mv.payType + ' ödeme' : 'Ödeme';
+  const mvNote = mv => (mv.kind === 'duzeltme' ? '' : mv.note || '');
   const n = val ? parseInt(val, 10) : 0;
   const doPay = async () => {
     if (n <= 0 || busy) return; setBusy(true);
@@ -1413,12 +1428,12 @@ function Defter({ go, pay }) {
     <div class="two">
       <div class="side">
         <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74"><small style="color:#7C2D12">Toplam alacak</small><b style="color:#C2410C;font-size:calc(38px * var(--s))">${tl(total)}</b></div>
-        ${cs.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); }}>
-          <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:calc(16px * var(--s));font-weight:800;opacity:.85">${x.id}</span><span style="font-size:calc(22px * var(--s));font-weight:700">${x.name}</span></span>
+        ${cs.map(x => { const b = balanceOf(S.moves, x.id); const on = x.id === code; return html`<button type="button" class="row" aria-pressed=${on} style=${'width:100%;min-height:max(44px, calc(76px * var(--s)));text-align:left;' + (on ? 'background:#C2410C;color:#fff' : '')} onClick=${() => { setSel(x.id); setVal(''); setLim(12); }}>
+          <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:calc(16px * var(--s));font-weight:800;opacity:.85">${custLabel(x)}</span><span style="font-size:calc(22px * var(--s));font-weight:700">${x.name}</span></span>
           <span style=${'font-size:calc(' + (b === 0 ? '16' : '23') + 'px * var(--s));font-weight:800;white-space:nowrap;color:' + (on ? '#fff' : b === 0 ? '#475569' : '#C2410C')}>${b === 0 ? 'Borcu yok' : tl(b)}</span></button>`; })}
       </div>
       <div class="main card">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${code} · ${c.name}</h2>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${c.kodsuz ? c.name : code + ' · ' + c.name}${c.kisi || c.faturaAdi ? html`<small style="display:block;font-size:calc(17px * var(--s));font-weight:600;color:#475569">${[c.kisi, c.faturaAdi ? 'Fatura: ' + c.faturaAdi : ''].filter(Boolean).join(' · ')}</small>` : ''}</h2>
           <span class="lbl">${lp ? 'Kilo fiyatı ' + tl(lp.price) + ' · ' + fd(lp.from) + ' tarihinden beri' : 'Kilo fiyatı yok'}</span></div>
         ${mode === 'detay' ? html`
           <div class="stat" style="background:#FFF7ED;border:2px solid #FDBA74;padding:18px 22px"><small style="color:#7C2D12">Bize borcu</small><b style="color:#C2410C;font-size:calc(62px * var(--s));letter-spacing:-1px">${tl(bal)}</b></div>
@@ -1427,10 +1442,11 @@ function Defter({ go, pay }) {
           <div class="lbl">Son hareketler</div>
           ${moves.length ? moves.map(mv => html`<div class="mv">
             ${mv.photoId ? html`<a class="thumb" style="width:calc(60px * var(--s));height:calc(60px * var(--s));flex:none" href=${photoSrc(mv.photoId)} target="_blank" rel="noopener" aria-label="Etiket fotoğrafı"><img src=${photoSrc(mv.photoId)} alt="Döner etiketi"/></a>` : ''}
-            <span style="min-width:0;flex:1"><b>${mv.kind === 'mal' ? 'Döner ' + kgA(mv.kg) + ' kg × ' + tl(mv.price) : mv.kind === 'duzeltme' ? mv.note || 'Düzeltme' : mv.payType + ' ödeme'}</b>
-              <small>${fd(mv.date)}${mv.kind === 'mal' && mv.from && mv.from !== mv.code ? ' · ' + mv.from + ' stoğundan geldi' : ''}</small></span>
-            <span style="display:flex;align-items:center;gap:8px">${(() => { const v = mv.kind === 'mal' ? mv.amount : mv.kind === 'duzeltme' ? mv.amount : -mv.amount; return html`<span class=${'amt ' + (v >= 0 ? 'plus' : 'minus')}>${(v >= 0 ? '+' : '−') + tl(Math.abs(v))}</span>`; })()}
-            ${(mv.kind === 'odeme' && mv.date === t) || mv.kind === 'duzeltme' ? html`<button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => delPay(mv)}>${confirmDel === mv.id ? 'Emin misin?' : 'Sil'}</button>` : ''}</span></div>`) : html`<div class="lbl">Hareket yok.</div>`}` : mode !== 'para' ? '' : html`
+            <span style="min-width:0;flex:1"><b>${mvTitle(mv)}</b>
+              <small>${fd(mv.date)}${mv.kind === 'mal' && mv.from && mv.from !== mv.code ? ' · ' + mv.from + ' stoğundan geldi' : ''}${mv.kaynak === 'excel' ? ' · Excel' : ''}</small>${mvNote(mv) ? html`<small style="display:block;color:#475569">${mvNote(mv)}</small>` : ''}</span>
+            <span style="display:flex;align-items:center;gap:8px">${mv.kind === 'not' ? '' : (() => { const v = mv.kind === 'mal' ? mv.amount : mv.kind === 'duzeltme' ? mv.amount : -mv.amount; return html`<span class=${'amt ' + (v >= 0 ? 'plus' : 'minus')}>${(v >= 0 ? '+' : '−') + tl(Math.abs(v))}</span>`; })()}
+            ${(mv.kind === 'odeme' && mv.date === t) || mv.kind === 'duzeltme' ? html`<button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => delPay(mv)}>${confirmDel === mv.id ? 'Emin misin?' : 'Sil'}</button>` : ''}</span></div>`) : html`<div class="lbl">Hareket yok.</div>`}
+          ${allMoves.length > lim ? html`<button type="button" class="btn ghost small" onClick=${() => setLim(l => l + 50)}>Daha eski ${Math.min(50, allMoves.length - lim)} hareketi göster (${allMoves.length - lim} kaldı)</button>` : ''}` : mode !== 'para' ? '' : html`
           <div class="lbl" style="color:#C2410C">Borcu: ${tl(bal)}</div>
           <div class="disp"><b>${n ? nf2.format(n) : '0'}</b><span>₺</span></div>
           <div class="grid2">${['Nakit', 'Havale / EFT'].map(x => html`<button type="button" class=${'btn small ' + (type === x ? '' : 'ghost')} aria-pressed=${type === x} style="min-height:max(44px, calc(64px * var(--s)))" onClick=${() => setType(x)}>${x}</button>`)}</div>
@@ -1460,9 +1476,9 @@ function Defter({ go, pay }) {
 // ---------- Müşteriler ----------
 function Musteriler({ go }) {
   const cs = custList();
-  const nextNum = () => Math.max(0, ...custList().map(x => x.num)) + 1;
-  const toDraft = c => { const lp = latestPrice(c); return { num: String(c.num), name: c.name, price: lp ? String(lp.price).replace('.', ',') : '', deri: String(c.deri), gogus: String(c.gogus), but: String(c.but) }; };
-  const blank = () => ({ num: String(nextNum()), name: '', price: '', deri: '0', gogus: '0', but: '0' });
+  const nextNum = () => Math.max(0, ...dkList().map(x => x.num)) + 1;
+  const toDraft = c => { const lp = latestPrice(c); return { num: String(c.num), name: c.name, price: lp ? String(lp.price).replace('.', ',') : '', deri: String(c.deri ?? 0), gogus: String(c.gogus ?? 0), but: String(c.but ?? 0), kodsuz: !!c.kodsuz, urun: c.urun || '' }; };
+  const blank = () => ({ num: String(nextNum()), name: '', price: '', deri: '0', gogus: '0', but: '0', kodsuz: false, urun: '' });
   const [sel, setSel] = useState(cs[0] ? cs[0].id : null);
   const [draft, setDraft] = useState(() => (cs[0] ? toDraft(cs[0]) : blank()));
   const [busy, setBusy] = useState(false);
@@ -1475,19 +1491,22 @@ function Musteriler({ go }) {
   const total = vals.deri + vals.gogus + vals.but;
   const price = r2(numOf(draft.price));
   let problem = '';
-  if (isNew && !(num >= 1)) problem = 'Şube numarası gir.';
-  else if (isNew && S.customers['B' + num]) problem = 'B' + num + ' zaten kayıtlı.';
-  else if (!draft.name.trim()) problem = 'Dükkan adını yaz.';
+  if (isNew && !draft.kodsuz && !(num >= 1)) problem = 'Şube numarası gir.';
+  else if (isNew && !draft.kodsuz && S.customers['B' + num]) problem = 'B' + num + ' zaten kayıtlı.';
+  else if (!draft.name.trim()) problem = draft.kodsuz ? 'Müşterinin adını yaz.' : 'Dükkan adını yaz.';
   else if (!(price > 0)) problem = 'Kilo fiyatını gir.';
-  else if (total !== 100) problem = 'Oranların toplamı %100 olmalı.';
+  else if (!draft.kodsuz && total !== 100) problem = 'Oranların toplamı %100 olmalı.';
   const c = isNew ? null : S.customers[sel];
   const save = async () => {
     if (problem || busy) return; setBusy(true);
-    const id = isNew ? 'B' + num : sel;
+    const id = isNew ? (draft.kodsuz ? 'K-' + genId() : 'B' + num) : sel;
     const prices = nextPrices(c ? c.prices : [], price, t);
     const lp = latestPrice(c);
     const changed = c && lp && lp.price !== price;
-    const rec = { num: isNew ? num : c.num, name: draft.name.trim(), deri: vals.deri, gogus: vals.gogus, but: vals.but, prices };
+    // Var olan ek alanlar (kişi, fatura adı, kaynak) korunur
+    const rec = draft.kodsuz
+      ? { ...(c || {}), num: c ? c.num : 1000 + custList().filter(x => x.kodsuz).length, name: draft.name.trim(), prices, kodsuz: true, urun: draft.urun.trim() || 'Parça et' }
+      : { ...(c || {}), num: isNew ? num : c.num, name: draft.name.trim(), deri: vals.deri, gogus: vals.gogus, but: vals.but, prices };
     if (c && c.sample) rec.sample = true;
     const ok = await safe(() => put('customers', id, rec), id + ' kaydedildi' + (changed ? ' · yeni fiyat bugünden sonraki teslimatlara geçerli' : ''));
     if (ok) { setSel(id); setDraft(toDraft(rec)); }
@@ -1500,30 +1519,35 @@ function Musteriler({ go }) {
     <div class="two">
       <div class="side">
         <button type="button" class="btn ghost small" style="border:3px dashed #6D28D9;color:#5B21B6;background:#F5F3FF;min-height:max(44px, calc(68px * var(--s)))" onClick=${() => { setSel(null); setDraft(blank()); }}>+ Yeni Müşteri</button>
-        ${cs.map(x => html`<button type="button" class=${'row pick' + (x.id === sel ? ' on' : '')} aria-pressed=${x.id === sel} onClick=${() => { setSel(x.id); setDraft(toDraft(x)); }}><span style="display:flex;align-items:center;gap:12px;min-width:0"><span class="badge">${x.id}</span><span>${x.name}</span></span></button>`)}
+        <button type="button" class="btn ghost small" onClick=${() => { setSel(null); setDraft({ ...blank(), kodsuz: true, urun: 'Kanat' }); }}>+ Kodsuz müşteri (sadece isim)</button>
+        ${cs.map(x => html`<button type="button" class=${'row pick' + (x.id === sel ? ' on' : '')} aria-pressed=${x.id === sel} onClick=${() => { setSel(x.id); setDraft(toDraft(x)); }}><span style="display:flex;align-items:center;gap:12px;min-width:0"><span class="badge">${custLabel(x)}</span><span>${x.name}</span></span></button>`)}
       </div>
       <div class="main card">
-        <h2>${isNew ? 'Yeni müşteri' : sel + ' · ' + c.name}</h2>
-        <div style="display:grid;grid-template-columns:calc(180px * var(--s)) minmax(0,1fr);gap:12px">
+        <h2>${isNew ? (draft.kodsuz ? 'Yeni kodsuz müşteri' : 'Yeni müşteri') : c.kodsuz ? c.name : sel + ' · ' + c.name}</h2>
+        ${c && (c.kisi || c.faturaAdi) ? html`<div class="lbl">${[c.kisi, c.faturaAdi ? 'Fatura: ' + c.faturaAdi : ''].filter(Boolean).join(' · ')}</div>` : ''}
+        ${draft.kodsuz ? html`<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Adı</span><input class="big" value=${draft.name} onInput=${e => setF('name', e.target.value)} placeholder="Örn. Kanatçı Ahmet"/></label>
+          <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Aldığı ürün</span><input class="big" value=${draft.urun} onInput=${e => setF('urun', e.target.value)} placeholder="Örn. Kanat"/></label>
+        </div>` : html`<div style="display:grid;grid-template-columns:calc(180px * var(--s)) minmax(0,1fr);gap:12px">
           <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Şube kodu</span>
             <span style="display:flex;align-items:center;height:max(44px, calc(72px * var(--s)));border-radius:16px;border:2px solid #94A3B8;background:#F8FAFC;overflow:hidden">
               <span style="display:flex;align-items:center;justify-content:center;width:calc(56px * var(--s));height:100%;background:#E2E8F0;font-size:calc(32px * var(--s));font-weight:800">B</span>
               ${isNew ? html`<input type="number" inputmode="numeric" min="1" value=${draft.num} onInput=${e => setF('num', e.target.value)} style="width:100%;min-width:0;border:none;background:transparent;padding:0 12px;font-size:calc(32px * var(--s));font-weight:800"/>` : html`<span style="padding:0 12px;font-size:calc(32px * var(--s));font-weight:800">${c.num}</span>`}
             </span></label>
           <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Dükkan adı</span><input class="big" value=${draft.name} onInput=${e => setF('name', e.target.value)} placeholder="Örn. Köşe Döner"/></label>
-        </div>
+        </div>`}
         <label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Kilo fiyatı (₺/kg)</span>
           <input class="big" inputmode="decimal" value=${draft.price} onInput=${e => setF('price', e.target.value)} placeholder="Örn. 165"/>
           <span class="lbl" style="font-size:calc(17px * var(--s))">Fiyat değişirse bugünden sonraki teslimatlara uygulanır. Eski teslimatlar eski fiyatla kalır.</span></label>
-        <div class="lbl">Döner oranları (marine et, toplam %100)</div>
-        ${[['deri', 'Deri'], ['gogus', 'Göğüs'], ['but', 'But']].map(([f, l]) => html`<div class="ratio">
+        ${draft.kodsuz ? '' : html`<div class="lbl">Döner oranları (marine et, toplam %100)</div>`}
+        ${draft.kodsuz ? '' : [['deri', 'Deri'], ['gogus', 'Göğüs'], ['but', 'But']].map(([f, l]) => html`<div class="ratio">
           <label for=${'o-' + f}>${l}</label>
           <button type="button" class="step" aria-label=${l + ' oranını azalt'} onClick=${() => step(f, -1)}>−</button>
           <span class="pct"><span>%</span><input id=${'o-' + f} type="number" inputmode="numeric" min="0" max="100" value=${draft[f]} onInput=${e => setF(f, e.target.value)}/></span>
           <button type="button" class="step" aria-label=${l + ' oranını artır'} onClick=${() => step(f, 1)}>+</button></div>`)}
-        <div role="status" style=${'display:flex;justify-content:space-between;align-items:center;min-height:max(44px, calc(64px * var(--s)));padding:0 20px;border-radius:16px;font-size:calc(26px * var(--s));font-weight:800;' + (total === 100 ? 'background:#DBEAFE;color:#1E3A8A' : 'background:#FFF7ED;color:#9A3412;border:2px solid #C2410C')}>
-          <span style="font-size:calc(21px * var(--s))">Toplam</span><span>${total === 100 ? '%100 ✓' : '%' + total + ' · ' + (diff > 0 ? '%' + diff + ' eksik' : '%' + (-diff) + ' fazla')}</span></div>
-        ${total === 100 ? (() => { const st = settingsOn(S.settings, t); const km = customerKgCost(vals, costModel(st, kemiksizFor(DATA(), t).val), st); return html`<div class="lbl">Bu oranla kg maliyeti ${tl(r2(km))}${price > 0 ? html` · kâr <b style=${'color:' + (price - km < 0 ? '#9A3412' : '#0F766E')}>${sgn(r2(price - km), tl)}/kg</b>` : ''}</div>`; })() : ''}
+        ${draft.kodsuz ? '' : html`<div role="status" style=${'display:flex;justify-content:space-between;align-items:center;min-height:max(44px, calc(64px * var(--s)));padding:0 20px;border-radius:16px;font-size:calc(26px * var(--s));font-weight:800;' + (total === 100 ? 'background:#DBEAFE;color:#1E3A8A' : 'background:#FFF7ED;color:#9A3412;border:2px solid #C2410C')}>
+          <span style="font-size:calc(21px * var(--s))">Toplam</span><span>${total === 100 ? '%100 ✓' : '%' + total + ' · ' + (diff > 0 ? '%' + diff + ' eksik' : '%' + (-diff) + ' fazla')}</span></div>`}
+        ${!draft.kodsuz && total === 100 ? (() => { const st = settingsOn(S.settings, t); const km = customerKgCost(vals, costModel(st, kemiksizFor(DATA(), t).val), st); return html`<div class="lbl">Bu oranla kg maliyeti ${tl(r2(km))}${price > 0 ? html` · kâr <b style=${'color:' + (price - km < 0 ? '#9A3412' : '#0F766E')}>${sgn(r2(price - km), tl)}/kg</b>` : ''}</div>`; })() : ''}
         ${problem ? html`<div class="lbl" style="color:#9A3412">${problem}</div>` : ''}
         <button type="button" class="btn" style="min-height:max(44px, calc(88px * var(--s)));font-size:calc(30px * var(--s))" disabled=${!!problem || busy} onClick=${save}>KAYDET</button>
         ${hist.length ? html`<div class="lbl" style="margin-top:6px">Fiyat geçmişi</div>
@@ -1877,7 +1901,7 @@ function Maliyet({ go }) {
   const t = today(); const s = settingsFor(t);
   const kf = kemiksizFor(DATA(), t);
   const m = costModel(s, kf.val);
-  const cs = custList();
+  const cs = dkList();
   const eks = eksikPartiler(DATA(), t, 30);
   const kaynak = kf.src === 'gercek' ? 'bugünkü alımlar ve çıkan etten' : kf.src === 'onceki' ? fd(kf.date) + ' günü alımlarından (bugün tamamlanmış parti yok)' : 'Oranlar ekranındaki standart fiyattan (son 30 günde tamamlanmış parti yok)';
   return html`<div class="wrap">
@@ -2087,7 +2111,8 @@ function Tedarik({ go }) {
     setBusy(false);
   };
   const del = async x => { if (confirmDel !== x.id) { setConfirmDel(x.id); return; } setConfirmDel(null); await safe(() => removeDoc('tedarik', x.id), 'Kayıt silindi'); };
-  const satir = x => x.tur === 'odeme' ? 'Ödeme yaptık' : x.tur === 'deri' ? 'Deri · ' + kgA(x.miktar) + ' kg' + (x.fiyat ? ' × ' + tl(x.fiyat) : '') : x.tur === 'iscilik' ? 'Döner işçiliği · ' + kgA(x.miktar) + ' kg × ' + tl(x.fiyat) : x.ad + ' · ' + nf2.format(x.miktar) + ' × ' + tl(x.fiyat);
+  const son = [...mine].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 30);
+  const satir = x => x.tur === 'odeme' ? 'Ödeme yaptık' : x.tur === 'duzeltme' ? x.not || 'Düzeltme' : x.tur === 'malzeme' && !x.miktar ? x.ad + ' (kilo yazılmamış)' : x.tur === 'deri' ? 'Deri · ' + kgA(x.miktar) + ' kg' + (x.fiyat ? ' × ' + tl(x.fiyat) : '') : x.tur === 'iscilik' ? 'Döner işçiliği · ' + kgA(x.miktar) + ' kg × ' + tl(x.fiyat) : x.ad + ' · ' + nf2.format(x.miktar) + ' × ' + tl(x.fiyat);
   return html`<div class="wrap">
     <${Top} title="Tedarikçi" sub=${fd(day) + ' · ' + firma + ' · gün toplamı ' + tl(og.alim)} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
     <div class="chips">${flist.map(n => html`<button type="button" class=${'btn small ' + (n === firma ? 'purple' : 'ghost')} aria-pressed=${n === firma} onClick=${() => setFirma(n)}>${n}</button>`)}
@@ -2102,12 +2127,15 @@ function Tedarik({ go }) {
       <div class="stat"><small>Gün toplamı</small><b style="color:#C2410C">${tl(og.alim)}</b>${og.odeme ? html`<small>ödenen ${tl(og.odeme)}</small>` : ''}</div>
     </div>
     ${gun.length ? gun.map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b>${x.not ? html`<small>${x.not}</small>` : ''}</span>
-      <span style="display:flex;align-items:center;gap:8px"><span class=${'amt ' + (x.tur === 'odeme' ? 'minus' : 'plus')}>${x.tur === 'deri' && !x.tutar ? 'bedelsiz' : (x.tur === 'odeme' ? '−' : '+') + tl(x.tutar)}</span>
+      <span style="display:flex;align-items:center;gap:8px"><span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${x.tur === 'deri' && !x.tutar ? 'bedelsiz' : (x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar))}</span>
       <button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></span></div>`)
       : html`<div class="card"><div class="lbl">Bu gün ${firma} için kayıt yok. Aldığınız deriyi, ödediğiniz döner işçiliğini ve malzemeleri girin; günlük toplam ve borç kendiliğinden hesaplanır. Firmanın fişiyle karşılaştırın.</div></div>`}
     ${Object.keys(byDay).length ? html`<h2 style="margin-top:4px">Bu ay gün gün</h2>
       <div class="tbl"><div class="tr5 head"><span>Gün</span><span>Deri kg</span><span>İşçilik</span><span>Malzeme</span><span>Toplam</span></div>
       ${Object.keys(byDay).sort().reverse().map(d => { const o = tedarikOzet(byDay[d]); return html`<div class="tr5"><span><b>${d.slice(8, 10)}.${d.slice(5, 7)}</b></span><span>${kg(o.deriKg)}</span><span>${tl(o.iscilikTL)}<small class="pcs">${kg(o.iscilikKg)} kg</small></span><span>${tl(o.malzemeTL)}</span><span style="font-weight:800;color:#C2410C">${tl(o.alim)}</span></div>`; })}</div>` : ''}
+    ${son.length ? html`<h2 style="margin-top:4px">${firma} · son kayıtlar</h2>
+      ${son.map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b><small>${fd(x.date)}${x.kaynak === 'excel' ? ' · Excel' : ''}${x.not && x.tur !== 'duzeltme' ? ' · ' + x.not : ''}</small></span>
+        <span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${(x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar || 0))}</span></div>`)}` : ''}
     ${f ? html`<${Modal} close=${() => setF(null)}>
       <h2>${TUR[f.tur][0]} · ${firma}</h2><div class="lbl">${fd(day)}</div>
       ${f.tur === 'malzeme' ? html`<${Fld} label="Malzeme adı" value=${f.ad} set=${v => FF('ad', v)} text=${true}/>
@@ -2123,10 +2151,131 @@ function Tedarik({ go }) {
   </div>`;
 }
 
+// ---------- Şahsi hesaplar ve kartlar ----------
+function Sahsi({ go }) {
+  const all = Object.entries(S.sahsi).map(([id, x]) => ({ id, ...x }));
+  const kisiler = [...new Set(all.map(x => x.kisi).filter(Boolean))];
+  const [kisi, setKisi] = useState(kisiler[0] || '');
+  const [yeni, setYeni] = useState('');
+  const [f, setF] = useState(null);
+  const [kf, setKf] = useState(null);
+  const [lim, setLim] = useState(30);
+  const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const klist = [...new Set([...kisiler, kisi].filter(Boolean))];
+  const mine = all.filter(x => x.kisi === kisi).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const bak = sahsiBakiye(mine);
+  const kartlar = Object.entries(S.kartlar).map(([id, x]) => ({ id, ...x })).sort((a, b) => (a.sira || 0) - (b.sira || 0));
+  const TUR = { borc: ['Verdik (borçlandı)', '#C2410C'], odeme: ['Ödedi / geri verdi', '#0F766E'], not: ['Not', '#475569'] };
+  const satir = x => x.tur === 'borc' ? 'Verdik / aldı' : x.tur === 'odeme' ? 'Ödedi / verdi' : x.tur === 'duzeltme' ? 'Düzeltme' : 'Not';
+  const FF = (k, v) => setF(x => ({ ...x, [k]: v }));
+  const save = async () => {
+    const t = r2(num(f.tutar));
+    if (f.tur !== 'not' && !(t > 0)) { toast('Tutarı gir.'); return; }
+    if (f.tur === 'not' && !f.not.trim()) { toast('Notu yaz.'); return; }
+    setBusy(true);
+    const rec = { kisi, date: today(), tur: f.tur, tutar: f.tur === 'not' ? 0 : t, ts: Date.now() };
+    if (f.not.trim()) rec.not = f.not.trim();
+    const ok = await safe(() => put('sahsi', genId(), rec), TUR[f.tur][0] + ' kaydedildi');
+    if (ok) setF(null);
+    setBusy(false);
+  };
+  const del = async x => { if (confirmDel !== x.id) { setConfirmDel(x.id); return; } setConfirmDel(null); await safe(() => removeDoc('sahsi', x.id), 'Kayıt silindi'); };
+  const saveKart = async () => {
+    setBusy(true);
+    const old = S.kartlar[kf.id] || {};
+    const ok = await safe(() => put('kartlar', kf.id, { ...old, durum: kf.durum.trim(), not: kf.not.trim() }), old.ad + ' güncellendi');
+    if (ok) setKf(null);
+    setBusy(false);
+  };
+  return html`<div class="wrap">
+    <${Top} title="Şahsi hesaplar" sub=${kisi ? kisi + ' · ' + mine.length + ' kayıt' : 'Kişi seç ya da ekle'} go=${go}/>
+    <div class="chips">${klist.map(n => html`<button type="button" class=${'btn small ' + (n === kisi ? 'purple' : 'ghost')} aria-pressed=${n === kisi} onClick=${() => { setKisi(n); setLim(30); }}>${n}</button>`)}
+      <span style="display:flex;gap:6px;flex:1;min-width:200px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni kişi adı" placeholder="Yeni kişi adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
+      <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setKisi(yeni.trim()); setYeni(''); } }}>Ekle</button></span></div>
+    ${kisi ? html`
+      <div class="stat" style=${bak >= 0 ? 'background:#FFF7ED;outline:2px solid #FDBA74' : 'background:#F0FDFA;outline:2px solid #5EEAD4'}><small>${bak >= 0 ? kisi + ' bize borçlu' : 'Biz ' + kisi + ' kişisine borçluyuz'}</small><b style=${'font-size:calc(44px * var(--s));color:' + (bak >= 0 ? '#C2410C' : '#0F766E')}>${tl(Math.abs(bak))}</b></div>
+      <div class="g2">${Object.keys(TUR).map(t => html`<button type="button" class="btn small" style=${'background:' + TUR[t][1]} onClick=${() => setF({ tur: t, tutar: '', not: '' })}>+ ${TUR[t][0]}</button>`)}</div>
+      ${mine.slice(0, lim).map(x => html`<div class="mv"><span style="min-width:0;flex:1"><b>${satir(x)}</b><small>${fd(x.date)}${x.kaynak === 'excel' ? ' · Excel' : ''}</small>${x.not ? html`<small style="display:block;color:#475569">${x.not}</small>` : ''}</span>
+        <span style="display:flex;align-items:center;gap:8px">${x.tur === 'not' ? '' : html`<span class=${'amt ' + (x.tur === 'odeme' || x.tutar < 0 ? 'minus' : 'plus')}>${(x.tur === 'odeme' || x.tutar < 0 ? '−' : '+') + tl(Math.abs(x.tutar))}</span>`}
+        <button type="button" class="del-x" aria-label="Kaydı sil" onClick=${() => del(x)}>${confirmDel === x.id ? 'Emin misin?' : 'Sil'}</button></span></div>`)}
+      ${mine.length > lim ? html`<button type="button" class="btn ghost small" onClick=${() => setLim(l => l + 50)}>Daha eski kayıtları göster (${mine.length - lim} kaldı)</button>` : ''}` : ''}
+    <h2 style="margin-top:8px">Kredi kartları</h2>
+    <div class="lbl">Sadece kart adı, hesap kesim ve son ödeme günü. Şifreler ve numaralar burada tutulmaz.</div>
+    ${kartlar.length ? html`<div class="tbl"><div class="tr5 head"><span>Kart</span><span>Kesim</span><span>Son ödeme</span><span>Durum</span><span>Not</span></div>
+      ${kartlar.map(k => html`<button type="button" class="tr5" style="width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer" onClick=${() => setKf({ id: k.id, durum: k.durum || '', not: k.not || '' })}><span><b>${k.ad}</b>${k.limit ? html`<small class="pcs">limit ${tl(k.limit)}</small>` : ''}</span><span>${k.kesim ? 'ayın ' + k.kesim : '—'}</span><span>${k.sonOdeme ? 'ayın ' + k.sonOdeme : '—'}</span><span>${k.durum || '—'}</span><span>${k.not || ''}</span></button>`)}</div>` : html`<div class="lbl">Kart yok.</div>`}
+    ${f ? html`<${Modal} close=${() => setF(null)}>
+      <h2>${TUR[f.tur][0]} · ${kisi}</h2><div class="lbl">${fd(today())}</div>
+      ${f.tur === 'not' ? '' : html`<${Fld} label="Tutar" unit="₺" value=${f.tutar} set=${v => FF('tutar', v)}/>`}
+      <${Fld} label=${f.tur === 'not' ? 'Not' : 'Açıklama (isteğe bağlı)'} value=${f.not} set=${v => FF('not', v)} text=${true}/>
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setF(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
+    <//>` : ''}
+    ${kf ? html`<${Modal} close=${() => setKf(null)}>
+      <h2>${(S.kartlar[kf.id] || {}).ad}</h2>
+      <${Fld} label="Durum (ör. Kasım ödendi)" value=${kf.durum} set=${v => setKf(x => ({ ...x, durum: v }))} text=${true}/>
+      <${Fld} label="Not" value=${kf.not} set=${v => setKf(x => ({ ...x, not: v }))} text=${true}/>
+      <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setKf(null)}>Vazgeç</button>
+        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveKart}>KAYDET</button></div>
+    <//>` : ''}
+  </div>`;
+}
+
+// ---------- Arşiv: eski Excel sayfaları (sadece okunur, istenince indirilir) ----------
+const ARS = { list: null, cache: {} };
+const colName = n => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+function Arsiv({ go }) {
+  const [list, setList] = useState(ARS.list);
+  const [q, setQ] = useState('');
+  const [rq, setRq] = useState('');
+  const [open, setOpen] = useState(null);
+  const [doc, setDoc] = useState(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    if (list || !sb || S.mode !== 'live') return;
+    sb.from('docs').select('id,dosya:data->>dosya,sayfa:data->>sayfa,satir:data->satirSayisi,ayni:data->ayniDosyalar').eq('col', 'arsiv').order('id')
+      .then(({ data, error }) => { if (error) setErr('Arşiv listesi alınamadı. İnterneti kontrol et.'); else { ARS.list = data; setList(data); } });
+  }, []);
+  const show = async x => {
+    setOpen(x); setRq(''); setErr('');
+    if (ARS.cache[x.id]) { setDoc(ARS.cache[x.id]); return; }
+    setDoc(null);
+    const { data, error } = await sb.from('docs').select('data').eq('col', 'arsiv').eq('id', x.id).single();
+    if (error) { setErr('Sayfa alınamadı.'); return; }
+    ARS.cache[x.id] = data.data; setDoc(data.data);
+  };
+  if (S.mode !== 'live') return html`<div class="wrap"><${Top} title="Arşiv" go=${go}/><div class="card"><div class="lbl">Arşiv sadece çevrim içi (giriş yapılmış) kullanımda açılır.</div></div></div>`;
+  if (open) {
+    const rows = doc ? doc.rows.filter(([, cells]) => !rq || cells.some(([, v]) => String(v).toLocaleLowerCase('tr').includes(rq.toLocaleLowerCase('tr')))) : [];
+    const maxCol = doc ? Math.min(doc.sutunSayisi || 1, 120) : 1;
+    return html`<div class="wrap">
+      <${Top} title=${open.sayfa} sub=${open.dosya + (open.ayni && open.ayni.length ? ' · ' + open.ayni.length + ' dosyada aynısı var' : '')} go=${go}/>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost small" onClick=${() => { setOpen(null); setDoc(null); }}>‹ Arşiv listesi</button>
+        <input class="big" style="flex:1;min-width:200px;height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Satırlarda ara" placeholder="Satırlarda ara (ör. B12, kanat)" value=${rq} onInput=${e => setRq(e.target.value)}/></div>
+      ${err ? html`<div class="banner">${err}</div>` : ''}
+      ${!doc ? html`<div class="boot">Sayfa yükleniyor…</div>` : html`<div class="lbl">${rows.length} satır${doc.sutunSayisi > 120 ? ' · ilk 120 sütun' : ''}. Excel'deki değerler; formüller değil. Gizli bilgiler (şifre, IBAN, e-posta, uzun numaralar) maskelendi.</div>
+        <div style="overflow:auto;max-height:70vh;border:1px solid #CBD5E1;border-radius:12px;background:#fff">
+          <table style="border-collapse:collapse;font-size:calc(15px * var(--s))">
+            <thead><tr><th style="position:sticky;top:0;left:0;z-index:2;background:#E2E8F0;padding:4px 8px">#</th>${Array.from({ length: maxCol }, (_, i) => html`<th style="position:sticky;top:0;background:#E2E8F0;padding:4px 8px;font-weight:700">${colName(i + 1)}</th>`)}</tr></thead>
+            <tbody>${rows.map(([r, cells]) => { const m = {}; cells.forEach(([c, v]) => { m[c] = v; }); return html`<tr><th style="position:sticky;left:0;background:#F1F5F9;padding:4px 8px;font-weight:700">${r}</th>${Array.from({ length: maxCol }, (_, i) => html`<td style="border:1px solid #E2E8F0;padding:4px 8px;white-space:nowrap;max-width:28em;overflow:hidden;text-overflow:ellipsis" title=${m[i + 1] == null ? '' : String(m[i + 1])}>${m[i + 1] == null ? '' : typeof m[i + 1] === 'number' ? nf2.format(m[i + 1]) : m[i + 1]}</td>`)}</tr>`; })}</tbody>
+          </table></div>`}
+    </div>`;
+  }
+  const shown = (list || []).filter(x => !q || (x.dosya + ' ' + x.sayfa).toLocaleLowerCase('tr').includes(q.toLocaleLowerCase('tr')));
+  const byFile = {}; shown.forEach(x => { (byFile[x.dosya] = byFile[x.dosya] || []).push(x); });
+  return html`<div class="wrap">
+    <${Top} title="Arşiv" sub="Eski Excel dosyalarının tüm sayfaları (sadece okunur)" go=${go}/>
+    <input class="big" aria-label="Dosya veya sayfa ara" placeholder="Dosya veya sayfa ara" value=${q} onInput=${e => setQ(e.target.value)}/>
+    ${err ? html`<div class="banner">${err}</div>` : ''}
+    ${!list ? html`<div class="boot">Arşiv yükleniyor…</div>` : Object.keys(byFile).sort().map(fn => html`<div class="card"><h2 style="font-size:calc(22px * var(--s))">${fn}</h2>
+      ${byFile[fn].map(x => html`<button type="button" class="row pick" onClick=${() => show(x)}><span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0"><span>${x.sayfa}</span><small class="lbl" style="font-size:calc(15px * var(--s))">${x.satir} satır${x.ayni && x.ayni.length ? ' · ' + x.ayni.length + ' dosyada aynısı var' : ''}</small></span><span aria-hidden="true">›</span></button>`)}</div>`)}
+  </div>`;
+}
+
 // ---------- Uygulama ----------
-const VIEWS = ['ana', 'siparis', 'uretim', 'kontrol', 'stok', 'teslimat', 'mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'maliyet', 'rapor', 'oranlar', 'pin'];
+const VIEWS = ['ana', 'siparis', 'uretim', 'kontrol', 'stok', 'teslimat', 'mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'sahsi', 'arsiv', 'maliyet', 'rapor', 'oranlar', 'pin'];
 const ALIAS = { liste: 'siparis', kesim: 'mal', hesaplar: 'maliyet' };
-const LOCKED = ['mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'maliyet', 'rapor', 'oranlar', 'pin'];
+const LOCKED = ['mal', 'marine', 'sayim', 'defter', 'para', 'musteriler', 'tedarik', 'sahsi', 'arsiv', 'maliyet', 'rapor', 'oranlar', 'pin'];
 function App() {
   useStore();
   const pick = () => { let h = (location.hash || '').slice(1); h = ALIAS[h] || h; return VIEWS.includes(h) ? h : 'ana'; };
@@ -2139,7 +2288,7 @@ function App() {
   if (S.mode === 'login') body = html`<${Login}/>`;
   else if (!ready) body = html`<div class="wrap"><div class="boot">Yükleniyor…</div>${S.note ? html`<div class="banner">${S.note}</div>` : ''}</div>`;
   else {
-    const V = { ana: Ana, siparis: Siparis, uretim: Uretim, kontrol: Kontrol, stok: Stok, teslimat: Teslimat, mal: Mal, marine: Marine, sayim: Sayim, defter: Defter, para: Defter, musteriler: Musteriler, tedarik: Tedarik, maliyet: Maliyet, rapor: Rapor, oranlar: Oranlar }[view];
+    const V = { ana: Ana, siparis: Siparis, uretim: Uretim, kontrol: Kontrol, stok: Stok, teslimat: Teslimat, mal: Mal, marine: Marine, sayim: Sayim, defter: Defter, para: Defter, musteriler: Musteriler, tedarik: Tedarik, sahsi: Sahsi, arsiv: Arsiv, maliyet: Maliyet, rapor: Rapor, oranlar: Oranlar }[view];
     if (LOCKED.includes(view) && !isUnlocked()) body = html`<${PinGate} key=${'gate-' + view} go=${go} onOk=${emit}/>`;
     else if (view === 'pin') body = html`<${PinGate} key="pin-change" go=${go} change=${true} onOk=${() => go('ana')}/>`;
     else body = html`<${V} key=${view} go=${go} pay=${view === 'para'}/>`;
