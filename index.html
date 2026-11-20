@@ -1194,122 +1194,138 @@ function Kontrol({ go }) {
 
 // ---------- Stok ----------
 function Stok({ go }) {
-  const [m, setM] = useState(null);
-  const [reason, setReason] = useState('');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [add, setAdd] = useState(null);
+  // Sol: kod listesi (stok + donmada). Sağ: seçili kodun dönerleri, seçili dönerin işlemleri, direkt ekleme. Pencere yok.
   const t = today();
   const ds = donerList();
+  const cs = dkList();
   const sortD = (a, b) => (a.made < b.made ? -1 : a.made > b.made ? 1 : (a.ts || 0) - (b.ts || 0));
-  const group = list => { const by = {}; list.forEach(d => { (by[d.owner] = by[d.owner] || []).push(d); }); return [by, Object.keys(by).sort((a, b) => numOfCode(a) - numOfCode(b))]; };
+  const group = list => { const by = {}; list.forEach(d => { (by[d.owner] = by[d.owner] || []).push(d); }); return by; };
   const stok = ds.filter(d => d.status === 'stok').sort(sortD);
   const donmada = ds.filter(d => d.status === 'donmada').sort(sortD);
-  const [by, codes] = group(stok);
-  const [byF, codesF] = group(donmada);
+  const by = group(stok), byF = group(donmada);
+  const codes = [...new Set([...Object.keys(by), ...Object.keys(byF)])].sort((a, b) => numOfCode(a) - numOfCode(b));
   const removed = ds.filter(d => d.status === 'kaldirildi').sort((a, b) => (a.removedAt < b.removedAt ? 1 : a.removedAt > b.removedAt ? -1 : (b.ts || 0) - (a.ts || 0))).slice(0, 10);
   const sumKg = list => r1(list.reduce((s, d) => s + d.kg, 0));
-  const age = made => { const n = Math.round((new Date(t) - new Date(made)) / 86400000); return n <= 0 ? 'bugün yapıldı' : n === 1 ? 'dün yapıldı' : n === 2 ? '2 gün önce yapıldı' : fd(made); };
-  const close = () => { setM(null); setReason(''); setNote(''); };
+  const age = made => { const n = Math.round((new Date(t) - new Date(made)) / 86400000); return n <= 0 ? 'bugün' : n === 1 ? 'dün' : n === 2 ? '2 gün önce' : fd(made); };
+  const [selK, setSelK] = useState(null);
+  const [pick, setPick] = useState(null);     // seçili döner id
+  const [step, setStep] = useState(null);     // null | 'hedef' | 'sebep'
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [addCode, setAddCode] = useState(null);
+  const [val, setVal] = useState('');
+  const [busy, setBusy] = useState(false);
+  // Seçili kodun döneri kalmadıysa ilk kalan koda geçilir; stok boşsa direkt ekleme için seçilen kod kalır
+  const code = selK && (by[selK] || byF[selK]) ? selK : codes[0] || (selK && S.customers[selK] ? selK : cs[0] ? cs[0].id : null);
+  const ac = addCode && S.customers[addCode] ? addCode : code;
+  const cur = pick ? S.doners[pick] : null;
+  const curOk = cur && cur.owner === code && (cur.status === 'stok' || cur.status === 'donmada');
+  const close = () => { setPick(null); setStep(null); setReason(''); setNote(''); };
+  const pickCode = k => { setSelK(k); close(); };
   const sendTo = async (d, target) => {
     if (busy) return; setBusy(true);
-    const cur = S.doners[d.id];
-    if (cur && cur.status === 'stok') await safe(() => put('doners', d.id, { ...cur, status: 'yolda', target, sentAt: t }), target === cur.owner ? cur.owner + ' · ' + kg(cur.kg) + ' kg teslimata çıktı' : cur.owner + ' stoğundaki ' + kg(cur.kg) + ' kg döner ' + target + ' teslimatına eklendi');
+    const c = S.doners[d.id];
+    if (c && c.status === 'stok') await safe(() => put('doners', d.id, { ...c, status: 'yolda', target, sentAt: t }), target === c.owner ? c.owner + ' · ' + kg(c.kg) + ' kg teslimata çıktı' : c.owner + ' stoğundan ' + kg(c.kg) + ' kg ' + target + ' için teslimata çıktı');
     setBusy(false); close();
   };
-  const sendAll = async code => {
+  const sendAll = async k => {
     if (busy) return; setBusy(true);
-    for (const d of by[code] || []) { const cur = S.doners[d.id]; if (cur && cur.status === 'stok') { const ok = await safe(() => put('doners', d.id, { ...cur, status: 'yolda', target: code, sentAt: t })); if (!ok) break; } }
-    toast(code + ' dönerlerinin hepsi teslimata çıktı'); setBusy(false);
+    for (const d of by[k] || []) { const c = S.doners[d.id]; if (c && c.status === 'stok') { const ok = await safe(() => put('doners', d.id, { ...c, status: 'yolda', target: k, sentAt: t })); if (!ok) break; } }
+    toast(k + ' dönerlerinin hepsi teslimata çıktı'); setBusy(false); close();
   };
   const toStock = async d => {
     if (busy) return; setBusy(true);
-    const cur = S.doners[d.id];
-    if (cur && cur.status === 'donmada') await safe(() => put('doners', d.id, { ...cur, status: 'stok', stockedAt: t }), cur.owner + ' · ' + kg(cur.kg) + ' kg stoğa alındı');
+    const c = S.doners[d.id];
+    if (c && c.status === 'donmada') await safe(() => put('doners', d.id, { ...c, status: 'stok', stockedAt: t }), c.owner + ' · ' + kg(c.kg) + ' kg stoğa alındı');
     setBusy(false); close();
   };
-  const toStockAll = async code => {
+  const toStockAll = async k => {
     if (busy) return; setBusy(true);
-    for (const d of byF[code] || []) { const cur = S.doners[d.id]; if (cur && cur.status === 'donmada') { const ok = await safe(() => put('doners', d.id, { ...cur, status: 'stok', stockedAt: t })); if (!ok) break; } }
-    toast(code + ' dönerlerinin hepsi stoğa alındı'); setBusy(false);
+    for (const d of byF[k] || []) { const c = S.doners[d.id]; if (c && c.status === 'donmada') { const ok = await safe(() => put('doners', d.id, { ...c, status: 'stok', stockedAt: t })); if (!ok) break; } }
+    toast(k + ' dönerlerinin hepsi stoğa alındı'); setBusy(false); close();
   };
   const removeIt = async d => {
     if (busy || !reason || (reason === 'Diğer' && !note.trim())) return; setBusy(true);
-    const cur = S.doners[d.id];
-    if (cur && (cur.status === 'stok' || cur.status === 'donmada')) await safe(() => put('doners', d.id, { ...cur, status: 'kaldirildi', reason, note: note.trim(), removedAt: t }), kg(cur.kg) + ' kg döner kaldırıldı');
+    const c = S.doners[d.id];
+    if (c && (c.status === 'stok' || c.status === 'donmada')) await safe(() => put('doners', d.id, { ...c, status: 'kaldirildi', reason, note: note.trim(), removedAt: t }), kg(c.kg) + ' kg döner stoktan kaldırıldı: ' + reason);
     setBusy(false); close();
   };
   const undoRemove = async d => {
-    const cur = S.doners[d.id]; if (!cur || cur.status !== 'kaldirildi') return;
-    const { reason: _r, note: _n, removedAt: _a, ...rest } = cur;
+    const c = S.doners[d.id]; if (!c || c.status !== 'kaldirildi') return;
+    const { reason: _r, note: _n, removedAt: _a, ...rest } = c;
     await safe(() => put('doners', d.id, { ...rest, status: 'stok', stockedAt: rest.stockedAt || t }), 'Döner stoğa geri alındı');
   };
   const addDirect = async () => {
-    const n = numOf(add.val);
-    if (busy || !add.code || n <= 0) return;
+    const n = numOf(val);
+    if (busy || !ac || n <= 0) return;
     if (n > 200) { toast('Bir döner 200 kg’dan büyük girilemez.'); return; }
     setBusy(true);
-    const ok = await safe(() => put('doners', genId(), { owner: add.code, kg: r1(n), made: t, status: 'stok', source: 'direkt', stockedAt: t, ts: Date.now() }), add.code + ' · ' + kg(n) + ' kg direkt stoğa eklendi');
-    if (ok) setAdd(a => ({ ...a, val: '' }));
+    const ok = await safe(() => put('doners', genId(), { owner: ac, kg: r1(n), made: t, status: 'stok', source: 'direkt', stockedAt: t, ts: Date.now() }), ac + ' · ' + kg(n) + ' kg direkt stoğa eklendi');
+    if (ok) { setVal(''); setSelK(ac); }
     setBusy(false);
   };
-  const cur = m ? S.doners[m.id] : null;
-  const cs = dkList();
-  const section = (title, sub, byX, codesX, frozen) => html`
-    ${title ? html`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px"><h2>${title}</h2><span class="lbl">${sub}</span></div>` : ''}
-    ${codesX.map(code => html`<div class="card" style=${'gap:12px;' + (frozen ? 'background:#F1F5F9;border:2px dashed #64748B' : '')}>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-size:calc(40px * var(--s));font-weight:800">${code}</span><span style=${'font-size:calc(24px * var(--s));font-weight:800;color:' + (frozen ? '#334155' : '#0E7490')}>${kg(sumKg(byX[code]))} kg</span></div>
-        ${frozen ? html`<button type="button" class="btn small" disabled=${busy} onClick=${() => toStockAll(code)}>Hepsini stoğa al</button>`
-          : html`<button type="button" class="btn teal small" disabled=${busy} onClick=${() => sendAll(code)}>Hepsini teslimata çıkar</button>`}
-      </div>
-      <div class="chips">${byX[code].map(d => html`<button type="button" class="chip" style=${frozen ? 'border-color:#64748B;background:#fff' : ''} aria-label=${code + ' ' + kg(d.kg) + ' kg döner, seçenekler'} onClick=${() => setM({ id: d.id, step: 'menu' })}>${kgA(d.actualKg != null ? d.actualKg : d.kg)}<small>${d.source === 'direkt' ? 'direkt eklendi' : age(d.made)}</small></button>`)}</div>
-    </div>`)}`;
+  const chip = (d, frozen) => html`<button type="button" class="chip" aria-pressed=${pick === d.id} style=${(frozen ? 'border-color:#64748B;background:#fff;' : '') + (pick === d.id ? 'border-color:#6D28D9;background:#EDE9FE;box-shadow:0 0 0 3px #6D28D9 inset' : '')} aria-label=${d.owner + ' ' + kg(d.kg) + ' kg döner, seç'} onClick=${() => { setPick(pick === d.id ? null : d.id); setStep(null); }}>${kg(d.kg)} kg<small>${d.source === 'direkt' ? 'direkt · ' : ''}${age(d.made)}</small></button>`;
   return html`<div class="wrap">
-    <${Top} title="Döner Stok" sub=${stok.length + ' döner · ' + kg(sumKg(stok)) + ' kg · dönere dokun'} go=${go}/>
-    <button type="button" class="btn" disabled=${!cs.length} onClick=${() => setAdd({ code: cs[0] ? cs[0].id : null, val: '' })}>+ Stoğa direkt döner ekle</button>
-    ${codes.length ? section('', '', by, codes, false) : html`<div class="card"><h2>Stokta döner yok</h2><button type="button" class="btn" onClick=${() => go('uretim')}>Üretim gir</button></div>`}
+    <${Top} title="Döner Stok" sub=${stok.length + ' döner · ' + kg(sumKg(stok)) + ' kg' + (donmada.length ? ' · donmada ' + donmada.length : '')} go=${go}/>
+    <div class="two">
+      <div class="side">
+        ${codes.length ? codes.map(k => { const n = (by[k] || []).length; const on = k === code; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pickCode(k)}>
+          <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:calc(30px * var(--s));font-weight:800;line-height:1.1">${k}</span><span style="font-size:calc(16px * var(--s));font-weight:700;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameOf(k)}</span></span>
+          <span style="display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap"><span style="font-size:calc(20px * var(--s));font-weight:800">${n ? n + ' döner · ' + kg(sumKg(by[k])) + ' kg' : 'stokta yok'}</span>${byF[k] ? html`<span style="font-size:calc(15px * var(--s));font-weight:700;opacity:.85">+${byF[k].length} donmada</span>` : ''}</span></button>`; })
+          : html`<div class="card"><h2>Stokta döner yok</h2><div class="lbl">Üretim girince dönerler burada görünür.</div><button type="button" class="btn" onClick=${() => go('uretim')}>Üretim gir</button></div>`}
+        <button type="button" class=${'btn small ' + (showAdd ? '' : 'ghost')} aria-pressed=${showAdd} disabled=${!cs.length} onClick=${() => { setShowAdd(x => !x); close(); }}>+ Stoğa direkt döner ekle</button>
+      </div>
+      <div class="main">
+        ${code ? html`
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:12px;min-width:0"><span style="font-size:calc(36px * var(--s));font-weight:800">${code}</span><span class="lbl" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameOf(code)}</span></div>
+            ${by[code] ? html`<button type="button" class="btn teal small" disabled=${busy} onClick=${() => sendAll(code)}>Hepsini teslimata çıkar</button>` : ''}
+          </div>
+          ${by[code] ? html`<div class="lbl">${by[code].length} döner · ${kg(sumKg(by[code]))} kg · dönere dokun</div><div class="chips">${by[code].map(d => chip(d, false))}</div>` : html`<div class="lbl">${code} için stokta döner yok.</div>`}
+          ${byF[code] ? html`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div class="lbl">Donmada (hazır değil) · ${byF[code].length} döner</div><button type="button" class="btn small" disabled=${busy} onClick=${() => toStockAll(code)}>Hepsini stoğa al</button></div><div class="chips">${byF[code].map(d => chip(d, true))}</div>` : ''}
+          ${curOk ? html`<div class="card" style="border:3px solid #6D28D9;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>${kg(cur.kg)} kg döner</h2><span class="lbl">${cur.source === 'direkt' ? 'direkt eklendi ' + fd(cur.made) : 'üretim ' + fd(cur.made) + ' · ' + age(cur.made)}</span></div>
+            ${step === null && cur.status === 'donmada' ? html`<div class="grid2">
+              <button type="button" class="btn" disabled=${busy} onClick=${() => toStock(cur)}>Stoğa al (hazır)</button>
+              <button type="button" class="btn orange" onClick=${() => setStep('sebep')}>Kaldır</button></div>
+              <button type="button" class="btn ghost small" style="align-self:flex-start" onClick=${close}>Vazgeç</button>` : ''}
+            ${step === null && cur.status === 'stok' ? html`<div class="grid2">
+              <button type="button" class="btn teal" disabled=${busy} onClick=${() => sendTo(cur, cur.owner)}>Teslimata çıkar (${cur.owner})</button>
+              <button type="button" class="btn" onClick=${() => setStep('hedef')}>Başka müşteri için</button>
+              <button type="button" class="btn orange" onClick=${() => setStep('sebep')}>Stoktan kaldır</button>
+              <button type="button" class="btn ghost" onClick=${close}>Vazgeç</button></div>` : ''}
+            ${step === 'hedef' ? html`
+              <div class="lbl">Bu döner hangi müşteriye gidecek? Hesap o müşterinin fiyatıyla tutulur.</div>
+              <div class="grid3">${cs.filter(x => x.id !== cur.owner).map(x => html`<button type="button" class="code" disabled=${busy} onClick=${() => sendTo(cur, x.id)}>${x.id}</button>`)}</div>
+              <button type="button" class="btn ghost small" style="align-self:flex-start" onClick=${() => setStep(null)}>Geri</button>` : ''}
+            ${step === 'sebep' ? html`
+              <div class="lbl">Neden kaldırılıyor?</div>
+              <div class="grid3">${['Fire / bozuk', 'Fabrika satış şubesi', 'Diğer'].map(r => html`<button type="button" class=${'btn small ' + (reason === r ? 'orange' : 'ghost')} aria-pressed=${reason === r} onClick=${() => setReason(r)}>${r}</button>`)}</div>
+              ${reason === 'Diğer' ? html`<label class="lbl" for="not">Kısa not</label><input id="not" class="big" value=${note} onInput=${e => setNote(e.target.value)} placeholder="Örn. numune"/>` : ''}
+              <div class="grid2">
+                <button type="button" class="btn ghost" onClick=${() => setStep(null)}>Geri</button>
+                <button type="button" class="btn orange" disabled=${busy || !reason || (reason === 'Diğer' && !note.trim())} onClick=${() => removeIt(cur)}>Kaldır</button>
+              </div>` : ''}
+          </div>` : ''}
+          ${showAdd ? html`<div class="card" style="gap:10px">
+            <div class="lbl">Stoğa direkt döner ekle (üretim listesine yazılmaz; örn. sayımda bulunan). Kod:</div>
+            <div class="grid3">${cs.map(x => html`<button type="button" class=${'code' + (x.id === ac ? ' on' : '')} aria-pressed=${x.id === ac} onClick=${() => setAddCode(x.id)}>${x.id}</button>`)}</div>
+            <div class="disp"><b>${val || '0'}</b><span>kg</span></div>
+            <${Keypad} value=${val} set=${setVal} comma=${true}/>
+            <div class="grid3">
+              <button type="button" class="btn ghost" onClick=${() => { setShowAdd(false); setVal(''); }}>Kapat</button>
+              <button type="button" class="btn" style="grid-column:span 2" disabled=${busy || !ac || numOf(val) <= 0} onClick=${addDirect}>${ac || ''} STOĞA EKLE</button>
+            </div>
+          </div>` : ''}` : html`<div class="card"><h2>Önce müşteri ekle</h2><button type="button" class="btn purple" onClick=${() => go('musteriler')}>Müşteriler</button></div>`}
+      </div>
+    </div>
     ${removed.length ? html`<div class="lbl" style="margin-top:6px">Kaldırılanlar (son 10)</div>
       ${removed.map(d => html`<div class="mv"><span><b>${d.owner} · ${kg(d.kg)} kg · ${d.reason}${d.note ? ' (' + d.note + ')' : ''}</b><small>${fd(d.removedAt)}</small></span>
         <button type="button" class="btn ghost small" onClick=${() => undoRemove(d)}>Stoğa geri al</button></div>`)}` : ''}
-    ${m && cur ? html`<${Modal} close=${close}>
-      <h2>${cur.owner} · ${kg(cur.kg)} kg döner</h2>
-      <div class="lbl">${cur.source === 'direkt' ? 'Direkt stoğa eklendi: ' + fd(cur.made) : 'Üretim: ' + fd(cur.made) + ' · ' + age(cur.made)}</div>
-      ${m.step === 'menu' && cur.status === 'donmada' ? html`
-        <button type="button" class="btn" disabled=${busy} onClick=${() => toStock(m)}>Stoğa al (hazır)</button>
-        <button type="button" class="btn orange" onClick=${() => setM({ ...m, step: 'sebep' })}>Kaldır</button>
-        <button type="button" class="btn ghost" onClick=${close}>Vazgeç</button>` : ''}
-      ${m.step === 'menu' && cur.status === 'stok' ? html`
-        <button type="button" class="btn teal" disabled=${busy} onClick=${() => sendTo(m, cur.owner)}>Teslimata çıkar (${cur.owner})</button>
-        <button type="button" class="btn" onClick=${() => setM({ ...m, step: 'hedef' })}>Başka müşteri için teslimata çıkar</button>
-        <button type="button" class="btn orange" onClick=${() => setM({ ...m, step: 'sebep' })}>Stoktan kaldır</button>
-        <button type="button" class="btn ghost" onClick=${close}>Vazgeç</button>` : ''}
-      ${m.step === 'hedef' ? html`
-        <div class="lbl">Bu döner hangi müşteriye gidecek? Hesap o müşterinin fiyatıyla tutulur.</div>
-        <div class="grid3">${cs.filter(x => x.id !== cur.owner).map(x => html`<button type="button" class="code" disabled=${busy} onClick=${() => sendTo(m, x.id)}>${x.id}</button>`)}</div>
-        <button type="button" class="btn ghost" onClick=${() => setM({ ...m, step: 'menu' })}>Geri</button>` : ''}
-      ${m.step === 'sebep' ? html`
-        <div class="lbl">Neden kaldırılıyor?</div>
-        ${['Fire / bozuk', 'Fabrika satış şubesi', 'Diğer'].map(r => html`<button type="button" class=${'btn ' + (reason === r ? 'orange' : 'ghost')} aria-pressed=${reason === r} onClick=${() => setReason(r)}>${r}</button>`)}
-        ${reason === 'Diğer' ? html`<label class="lbl" for="not">Kısa not</label><input id="not" class="big" value=${note} onInput=${e => setNote(e.target.value)} placeholder="Örn. numune"/>` : ''}
-        <div class="grid2">
-          <button type="button" class="btn ghost" onClick=${() => setM({ ...m, step: 'menu' })}>Geri</button>
-          <button type="button" class="btn orange" disabled=${busy || !reason || (reason === 'Diğer' && !note.trim())} onClick=${() => removeIt(m)}>Kaldır</button>
-        </div>` : ''}
-    <//>` : ''}
-    ${add ? html`<${Modal} close=${() => setAdd(null)}>
-      <h2>Stoğa direkt döner ekle</h2>
-      <div class="lbl">Üretim girmeden stoğa döner ekler (örn. sayımda bulunan). Ustanın üretim listesine yazılmaz.</div>
-      <div class="grid3">${cs.map(x => html`<button type="button" class=${'code' + (x.id === add.code ? ' on' : '')} aria-pressed=${x.id === add.code} onClick=${() => setAdd(a => ({ ...a, code: x.id }))}>${x.id}</button>`)}</div>
-      <div class="disp"><b>${add.val || '0'}</b><span>kg</span></div>
-      <${Keypad} value=${add.val} set=${v => setAdd(a => ({ ...a, val: v }))} comma=${true}/>
-      <div class="grid3">
-        <button type="button" class="btn ghost" onClick=${() => setAdd(null)}>Bitti</button>
-        <button type="button" class="btn" style="grid-column:span 2" disabled=${busy || numOf(add.val) <= 0} onClick=${addDirect}>STOĞA EKLE</button>
-      </div>
-    <//>` : ''}
   </div>`;
 }
+
 
 // ---------- Sabah Teslimat ----------
 const ICam = html`<svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></svg>`;
