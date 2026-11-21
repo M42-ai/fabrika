@@ -33,6 +33,7 @@ h2{margin:0;font-size:calc(30px * var(--s));font-weight:800;line-height:1.15}
 .card{background:#fff;border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:14px}
 .two{display:flex;gap:24px;align-items:flex-start}
 .side{width:calc(300px * var(--s));flex:none;display:flex;flex-direction:column;gap:10px}
+.side>*{flex-shrink:0} /* sol sütun kayar; içindekiler ezilmez */
 .side.w400{width:calc(400px * var(--s))} /* tablo taşıyan sol sütun (Sayım) */
 /* Geniş ama dar sağ sütunlu düzen (iç ekran 700-900 px): Defter ekstre tablosu 390 px'e sığsın */
 @media (min-width:700px) and (max-width:900px){html[data-layout=wide] .main .tr4{font-size:calc(19px * var(--s));padding:8px 8px;gap:4px}html[data-layout=wide] .main .stats{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-layout=wide] .main .tbl{overflow-x:auto}}
@@ -420,6 +421,52 @@ function partiCalc(p, s) {
   const fark = { kanat: cik.kanat - std.kanat, gogus: cik.gogus - std.gogus, but: cik.but - std.but };
   return { gir, girKg, butunKg, cik, std, stdOk, eksik, fark, odemeHesap, odeme, paylar, elle, isciler, et, etStd, etFark: et - etStd, etOran, durum, kemik: Math.max(0, girKg - cik.kanat - et) };
 }
+// Mal stoğu (işlenecek türler), seçilen günün sonunda: gün gün önce gelen mal eklenir, sonra o günün partileri düşülür.
+// Eksiye düşmez (eski günlerde mal girişi yoksa stok sıfırda kalır). exceptId: düzeltilen partinin kendi kilosu sayılmaz.
+function malStokOn(data, day, exceptId) {
+  const gm = byDate(data.mal), gp = byDate(data.parti), gk = byDate(data.kesim);
+  const days = [...new Set([...Object.keys(gm), ...Object.keys(gp), ...Object.keys(gk)])].filter(d => d <= day).sort();
+  const st = {}; MAL.forEach(m => { if (m.is) st[m.id] = 0; });
+  days.forEach(d => {
+    (gm[d] || []).forEach(x => { if (x.tur in st) st[x.tur] += Number(x.kg) || 0; });
+    (gp[d] || []).forEach(p => { if (p.id !== exceptId) (p.girdiler || []).forEach(g => { if (g.tur in st) st[g.tur] -= Number(g.kg) || 0; }); });
+    (gk[d] || []).forEach(k => { if (k.id !== exceptId) st.butun -= Number(k.tavuk) || 0; });
+    Object.keys(st).forEach(t => { if (st[t] < 0.0005) st[t] = 0; });
+  });
+  return st;
+}
+// Türe göre 1 kg et maliyeti (Oranlar ekranındaki çıkış oranlarıyla).
+// Sossuz: alış + KDV + işçilik − kanat ve kemik geliri, çıkan kemiksiz ete bölünür. Soslu: karışım eklenir, marine artışıyla 1 kg marine ete bölünür.
+function turMaliyet(data, day, s) {
+  const m = costModel(s);
+  const ek = m.partiEt > 0 ? m.karisimTL / m.partiEt : 0;
+  return MAL.map(t => {
+    let f = malPrice(data.mal, t.id, day);
+    if (f == null && t.id === 'butun') f = s.tavukFiyat;
+    const st = malStd(t.id, s);
+    const et = st ? st.gogus + st.but : 0;
+    if (f == null || !st || !(et > 0)) return { ...t, fiyat: f, sossuz: null, soslu: null };
+    const kemik = Math.max(0, 1 - st.kanat - et);
+    const isc = t.is && s.iscilikMaliyete ? (t.id === 'butun' ? s.ucParcalama : 0) + st.kanat * s.ucKanat + st.gogus * s.ucGogus + st.but * s.ucBut : 0;
+    const sossuz = (f * (1 + s.kdv) + isc - st.kanat * s.kanatSatis - kemik * s.kemikSatis) / et;
+    return { ...t, fiyat: f, sossuz, soslu: (sossuz + ek) / (1 + s.marineArtis) };
+  });
+}
+// Partinin et farkının TL karşılığı (standarda göre fazla/eksik çıkan göğüs+but × o günün kemiksiz et fiyatı). Eksik girilmiş partide hesaplanmaz.
+const partiEtTL = (c, fiyat) => (c.stdOk && !c.eksik.length ? c.etFark * fiyat : null);
+// Et farkı için kg fiyatı: o günün alış fiyatıyla, standart oranlara göre 1 kg kemiksiz et maliyeti (işlenen türlerin et payına göre ağırlıklı).
+// İşçinin kendi verimi bu fiyatı değiştirmez. Bir türün fiyatı ya da oranı yoksa yedek fiyat (o günün kemiksiz maliyeti) kullanılır.
+function partiKgFiyat(c, tm, s, yedek) {
+  let w = 0, t = 0;
+  for (const g of c.gir) {
+    const m = tm.find(x => x.id === g.tur), st = malStd(g.tur, s);
+    if (!m || m.sossuz == null || !st) return { val: yedek, std: false };
+    const e = g.kg * (st.gogus + st.but); w += e; t += e * m.sossuz;
+  }
+  return w > 0 ? { val: t / w, std: true } : { val: yedek, std: false };
+}
+// İşçi listesi (config/isciler): { list: [{ ad, aktif }], gelmedi: { gün: [ad] } }
+const isciReg = () => { const r = (S.config && S.config.isciler) || {}; return { list: Array.isArray(r.list) ? r.list : [], gelmedi: r.gelmedi || {} }; };
 // Tarihe göre gruplama (aynı nesne için bir kez hesaplanır)
 const _grp = new WeakMap();
 function byDate(obj) {
@@ -982,7 +1029,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.8 · 20.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.9 · 21.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -1910,59 +1957,106 @@ function Mal({ go }) {
   const [day, setDay] = useState(() => { const d = UI.malDay; UI.malDay = null; return d || today(); });
   const [mf, setMf] = useState(null);
   const [pf, setPf] = useState(null);
+  const [sel, setSel] = useState(null);
+  const [ren, setRen] = useState(null);
+  const [yeniIsci, setYeniIsci] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
   const [busy, setBusy] = useState(false);
+  const data = DATA();
   const s = settingsFor(day);
   const gelis = (byDate(S.mal)[day] || []).slice().sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')) || (a.ts || 0) - (b.ts || 0));
-  const partis = partiListOn(DATA(), day);
+  const partis = partiListOn(data, day);
   const geldi = {}, islendi = {};
   gelis.forEach(x => { geldi[x.tur] = (geldi[x.tur] || 0) + x.kg; });
   partis.forEach(p => p.calc.gir.forEach(g => { islendi[g.tur] = (islendi[g.tur] || 0) + g.kg; }));
   const isT = MAL.filter(m => m.is);
-  const names = (() => {
+  const stok = malStokOn(data, day);
+  const kf = kemiksizFor(data, day);
+  const kfTxt = kf.src === 'gercek' ? 'o günün gerçek maliyeti' : kf.src === 'onceki' ? fd(kf.date) + ' maliyeti' : 'Oranlar ekranındaki standart';
+  const turM = turMaliyet(data, day, s);
+  const pfy = c => partiKgFiyat(c, turM, s, kf.val);
+  const fyTxt = fy => (fy.std ? 'o günün alışıyla' : kfTxt);
+  // --- işçiler: kayıtlı liste + geçmiş partilerdeki adlar ---
+  const reg = isciReg();
+  const gelmedi = reg.gelmedi[day] || [];
+  const hist = (() => {
     const seen = new Map(); const touch = (n, ts) => { if (n) seen.set(n, Math.max(seen.get(n) || 0, ts || 0)); };
     Object.values(S.kesim).forEach(k => touch(k.isci, k.ts)); Object.values(S.parti).forEach(p => (p.isciler || []).forEach(n => touch(n, p.ts)));
-    return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 12);
+    return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
   })();
-  const T = partis.reduce((a, p) => ({ gir: a.gir + p.calc.girKg, et: a.et + (p.calc.stdOk ? p.calc.et : 0), std: a.std + (p.calc.stdOk ? p.calc.etStd : 0), odeme: a.odeme + p.calc.odeme }), { gir: 0, et: 0, std: 0, odeme: 0 });
+  const regAd = new Set(reg.list.map(x => x.ad));
+  const aktif = [...reg.list.filter(x => x.aktif !== false).map(x => x.ad), ...hist.filter(n => !regAd.has(n)).slice(0, 12)];
+  const cikarilan = reg.list.filter(x => x.aktif === false).map(x => x.ad);
+  const names = aktif.filter(n => !gelmedi.includes(n));
+  const T = partis.reduce((a, p) => ({ gir: a.gir + p.calc.girKg, et: a.et + (p.calc.stdOk ? p.calc.et : 0), std: a.std + (p.calc.stdOk ? p.calc.etStd : 0), odeme: a.odeme + p.calc.odeme, prim: a.prim + sumBy(Object.values(p.primler || {}), x => x) }), { gir: 0, et: 0, std: 0, odeme: 0, prim: 0 });
   const gelenKg = sumBy(gelis, x => x.kg);
   const fireT = T.std > 0 ? (T.et - T.std) / T.std : null;
   const str = v => (v ? String(Math.round(v * 1000) / 1000).replace('.', ',') : '');
-  const del = async (col, id, msg) => { const key = col + id; if (confirmDel !== key) { setConfirmDel(key); return; } setConfirmDel(null); await safe(() => removeDoc(col, id), msg); };
+  const strTL = v => (v ? String(r2(v)).replace('.', ',') : '');
+  const stl = v => sgn(Math.round(v), x => tl(Math.round(x))); // fark ₺: tam lira
+  const tlR = v => tl(Math.round(v));
+  const TR = ';font-size:calc(18px * var(--s));padding:6px 2px;gap:4px;white-space:nowrap';
+  const TH = ';font-size:calc(15px * var(--s));padding:4px 2px;gap:4px';
+  const kzColor = v => (v < -0.005 ? '#B91C1C' : v > 0.005 ? '#15803D' : '#475569');
+  const del = async (col, id, msg) => { const key = col + id; if (confirmDel !== key) { setConfirmDel(key); return; } setConfirmDel(null); const ok = await safe(() => removeDoc(col, id), msg); if (ok) setSel(null); };
+  const toMain = () => { if (document.documentElement.dataset.layout === 'narrow') requestAnimationFrame(() => { const m = document.querySelector('.main'); if (m) m.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }; // dar ekranda ayrıntı listenin altında
+  const pick = v => { setSel(v); setMf(null); setPf(null); setRen(null); setConfirmDel(null); toMain(); };
+  const selMal = sel && sel.k === 'mal' ? gelis.find(x => x.id === sel.id) : null;
+  const selParti = sel && sel.k === 'parti' ? partis.find(p => p.id === sel.id) : null;
+  const isciView = !!(sel && sel.k === 'isci');
 
-  // --- mal geldi ---
+  // --- mal geldi (yeni ya da düzelt) ---
   const priceStr = tur => { const f = malPrice(S.mal, tur, day); return f != null ? String(r2(f)).replace('.', ',') : tur === 'butun' ? String(s.tavukFiyat).replace('.', ',') : ''; };
-  const openMal = () => { setPf(null); const now = new Date(); setMf({ tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' }); };
+  const openMal = x => {
+    setPf(null); setRen(null); setConfirmDel(null);
+    if (x) { setMf({ id: x.id, date: x.date, tur: x.tur, kg: str(x.kg), fiyat: strTL(x.fiyat), saat: x.saat || '' }); return; }
+    setSel(null);
+    const now = new Date(); setMf({ id: null, date: day, tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' });
+  };
   const MF = (k, v) => setMf(f => ({ ...f, [k]: v }));
   const saveMal = async () => {
     const k = num(mf.kg), f = num(mf.fiyat);
     if (!(k > 0)) { toast('Gelen malın kilosunu gir.'); return; }
     if (!(f > 0)) { toast('Kilo fiyatını gir.'); return; }
+    const date = mf.date || day;
+    if (date > today()) { toast('İleri bir tarih seçilemez.'); return; }
     setBusy(true);
-    const ok = await safe(() => put('mal', genId(), { date: day, saat: mf.saat || '', tur: mf.tur, kg: Math.round(k * 1000) / 1000, fiyat: r2(f), ts: Date.now() }), malAd(mf.tur) + ' · ' + kg(k) + ' kg kaydedildi');
-    if (ok) setMf(null);
+    const id = mf.id || genId(); const old = mf.id ? S.mal[mf.id] : null;
+    const rec = { date, saat: mf.saat || '', tur: mf.tur, kg: Math.round(k * 1000) / 1000, fiyat: r2(f), ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
+    const msg = !mf.id ? malAd(mf.tur) + ' · ' + kg(k) + ' kg kaydedildi' : date !== day ? 'Mal girişi düzeltildi ve ' + fd(date) + ' gününe taşındı' : 'Mal girişi düzeltildi';
+    const ok = await safe(() => put('mal', id, rec), msg);
+    if (ok) { setMf(null); setSel(date === day ? { k: 'mal', id } : null); }
     setBusy(false);
   };
 
-  // --- iş partisi ---
+  // --- iş partisi (yeni ya da düzelt) ---
   const openParti = p => {
-    setMf(null);
+    setMf(null); setRen(null); setConfirmDel(null);
+    const av = malStokOn(data, day, p ? p.id : null);
     const g = {}; isT.forEach(m => { g[m.id] = ''; });
     if (p) {
       p.calc.gir.forEach(x => { g[x.tur] = str(x.kg); });
-      setPf({ id: p.id, g, kanat: str(p.calc.cik.kanat), gogus: str(p.calc.cik.gogus), but: str(p.calc.cik.but), isciler: [...p.calc.isciler], yeni: '', elle: p.calc.elle, pay: Object.fromEntries(p.calc.isciler.map(n => [n, String(p.calc.paylar[n]).replace('.', ',')])) });
+      const pr = p.primler || {};
+      setPf({ id: p.id, av, g, kanat: str(p.calc.cik.kanat), gogus: str(p.calc.cik.gogus), but: str(p.calc.cik.but), isciler: [...p.calc.isciler], yeni: '', elle: p.calc.elle, pay: Object.fromEntries(p.calc.isciler.map(n => [n, String(p.calc.paylar[n]).replace('.', ',')])), prim: Object.fromEntries(p.calc.isciler.map(n => [n, strTL(Number(pr[n]) || 0)])) });
     } else {
-      isT.forEach(m => { g[m.id] = str(Math.max(0, (geldi[m.id] || 0) - (islendi[m.id] || 0))); });
-      setPf({ id: null, g, kanat: '', gogus: '', but: '', isciler: [], yeni: '', elle: false, pay: {} });
+      setSel(null);
+      const has = isT.filter(m => av[m.id] > 0.05);
+      if (has.length === 1) g[has[0].id] = str(av[has[0].id]); // tek tür stokta: kalanın hepsi önerilir
+      setPf({ id: null, av, g, kanat: '', gogus: '', but: '', isciler: [], yeni: '', elle: false, pay: {}, prim: {} });
     }
   };
   const PF = (k, v) => setPf(f => ({ ...f, [k]: v }));
   const recOf = f => {
     const r = { date: day, girdiler: isT.map(m => ({ tur: m.id, kg: num(f.g[m.id]) })).filter(x => x.kg > 0), cikan: { kanat: num(f.kanat), gogus: num(f.gogus), but: num(f.but) }, isciler: f.isciler };
     if (f.elle) r.paylar = Object.fromEntries(f.isciler.map(n => [n, r2(num(f.pay[n]))]));
+    const pr = {}; f.isciler.forEach(n => { const v = r2(num((f.prim || {})[n])); if (v > 0) pr[n] = v; });
+    if (Object.keys(pr).length) r.primler = pr;
     return r;
   };
   const prev = pf ? partiCalc(recOf(pf), s) : null;
+  const prevFy = prev ? pfy(prev) : null;
+  const prevTL = prev ? partiEtTL(prev, prevFy.val) : null;
+  const prevKz = prevTL != null ? esitBol(prevTL, prev.isciler) : {};
   const toggleIsci = n => setPf(f => ({ ...f, isciler: f.isciler.includes(n) ? f.isciler.filter(x => x !== n) : [...f.isciler, n] }));
   const addIsci = () => setPf(f => { const n = f.yeni.trim(); return !n || f.isciler.includes(n) ? { ...f, yeni: '' } : { ...f, isciler: [...f.isciler, n], yeni: '' }; });
   const toggleElle = () => setPf(f => {
@@ -1980,80 +2074,138 @@ function Mal({ go }) {
     const rec = { ...r, ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
     const pc = partiCalc(r, s);
     const ok = await safe(() => put('parti', id, rec), pc.eksik.length ? 'Kaydedildi, ama çıkan ' + pc.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join(' ve ') + ' girilmedi. Girene kadar bu parti maliyete katılmaz.' : 'İş partisi kaydedildi · ödeme ' + tl(pc.odeme));
-    if (ok) setPf(null);
+    if (ok) { setPf(null); setSel({ k: 'parti', id }); }
     setBusy(false);
   };
+  const stokHint = m => {
+    const a = pf.av[m.id] || 0, e = num(pf.g[m.id]);
+    if (e > 0) return e - a > 0.05 ? 'Stokta ' + kg(a) + ' kg · stoktan fazla' : 'Stokta ' + kg(a) + ' · kalır ' + kg(a - e) + ' kg';
+    return a > 0.05 ? 'Stokta ' + kg(a) + ' kg' : 'Stokta 0 kg';
+  };
+
+  // --- işçi listesi işlemleri ---
+  const saveReg = (next, msg) => {
+    const lim = shiftDay(today(), -60), gl = {};
+    Object.entries(next.gelmedi || {}).forEach(([d, a]) => { if (d >= lim && a && a.length) gl[d] = a; });
+    return safe(() => put('config', 'isciler', { list: next.list, gelmedi: gl }), msg);
+  };
+  const listWith = (ad, patch) => { const l = reg.list.map(x => ({ ...x })); const i = l.findIndex(x => x.ad === ad); if (i < 0) l.push({ ad, aktif: true, ...patch }); else l[i] = { ...l[i], ...patch }; return l; };
+  const isciEkle = async () => {
+    const n = yeniIsci.trim(); if (!n) return;
+    if (aktif.includes(n)) { toast(n + ' zaten listede.'); return; }
+    if (await saveReg({ ...reg, list: listWith(n, { aktif: true }) }, n + ' eklendi')) setYeniIsci('');
+  };
+  const isciCikar = n => saveReg({ ...reg, list: listWith(n, { aktif: false }) }, n + ' listeden çıkarıldı. Eski partileri duruyor.');
+  const isciGeriAl = n => saveReg({ ...reg, list: listWith(n, { aktif: true }) }, n + ' listeye geri alındı');
+  const gelmediToggle = n => {
+    const a = gelmedi.includes(n) ? gelmedi.filter(x => x !== n) : [...gelmedi, n];
+    return saveReg({ ...reg, gelmedi: { ...reg.gelmedi, [day]: a } }, gelmedi.includes(n) ? n + ' ' + fd(day) + ' geldi' : n + ' ' + fd(day) + ' gelmedi olarak işaretlendi');
+  };
+  const isciAdDegistir = async () => {
+    const eski = ren.ad, yeni = ren.yeni.trim();
+    if (!yeni || yeni === eski) { setRen(null); return; }
+    if ([...aktif, ...cikarilan, ...hist].includes(yeni)) { toast(yeni + ' adında işçi zaten var.'); return; }
+    const rk = o => (o ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k === eski ? yeni : k, v])) : o);
+    const pt = Object.entries(S.parti).filter(([, p]) => (p.isciler || []).includes(eski)).map(([id, p]) => [id, { ...p, isciler: p.isciler.map(n => (n === eski ? yeni : n)), ...(p.paylar ? { paylar: rk(p.paylar) } : {}), ...(p.primler ? { primler: rk(p.primler) } : {}) }]);
+    const ks = Object.entries(S.kesim).filter(([, k]) => k.isci === eski).map(([id, k]) => [id, { ...k, isci: yeni }]);
+    const l = reg.list.map(x => (x.ad === eski ? { ...x, ad: yeni } : { ...x })); if (!l.some(x => x.ad === yeni)) l.push({ ad: yeni, aktif: true });
+    const gl = {}; Object.entries(reg.gelmedi).forEach(([d, a]) => { gl[d] = a.map(n => (n === eski ? yeni : n)); });
+    setBusy(true);
+    const ok = await safe(async () => { if (pt.length) await putMany('parti', pt); if (ks.length) await putMany('kesim', ks); }, '');
+    if (ok && await saveReg({ list: l, gelmedi: gl }, eski + ' adı ' + yeni + ' olarak değişti' + (pt.length + ks.length ? ' (' + (pt.length + ks.length) + ' parti güncellendi)' : ''))) setRen(null);
+    setBusy(false);
+  };
+  // Ay özeti: seçilen günün ayı, ayın başından seçilen güne kadar
+  const ayOzet = () => {
+    const out = {}, ay = day.slice(0, 8) + '01';
+    for (let d = ay; d <= day; d = shiftDay(d, 1)) {
+      const ps = partiListOn(data, d); if (!ps.length) continue;
+      const sd = settingsOn(data.settings, d), tm = turMaliyet(data, d, sd); let yd = null;
+      ps.forEach(p => {
+        const c = p.calc;
+        let fy = partiKgFiyat(c, tm, sd, null);
+        if (fy.val == null) { if (yd == null) yd = kemiksizFor(data, d).val; fy = { val: yd }; }
+        const e = partiEtTL(c, fy.val), kz = e != null ? esitBol(e, c.isciler) : {}, pr = p.primler || {};
+        c.isciler.forEach(n => { const o = out[n] = out[n] || { n: 0, odeme: 0, kz: 0, prim: 0 }; o.n += 1; o.odeme += c.paylar[n] || 0; o.kz += kz[n] || 0; o.prim += Number(pr[n]) || 0; });
+      });
+    }
+    return out;
+  };
+
   const durumTag = c => c.durum === 'eksik' ? ['Çıkan ' + c.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join(' ve ') + ' girilmedi', '#B91C1C', '#FEE2E2'] : c.durum === 'stdYok' ? ['Standart girilmedi', '#334155', '#F1F5F9'] : c.durum === 'fazla' ? ['Fazla fire: et ' + sgn(c.etOran, pct) + '%', '#9A3412', '#FFF7ED'] : c.durum === 'yuksek' ? ['Standarttan fazla et: ' + sgn(c.etOran, pct) + '%', '#1E3A8A', '#DBEAFE'] : ['Normal: et ' + sgn(c.etOran, pct) + '%', '#134E4A', '#F0FDFA'];
-  const partRow = (label, c, p) => (c.cik[p] > 0 || c.std[p] > 0 ? html`<div class="tr3"><span>${label}</span><span>${kg(c.cik[p])}</span><span class="muted">${c.stdOk ? kg(c.std[p]) : '—'}</span><span style=${'color:' + (!c.stdOk ? '#475569' : c.fark[p] < 0 ? '#9A3412' : '#0F766E')}>${c.stdOk ? sgn(c.fark[p], kg) : '—'}</span></div>` : '');
+  const durumPill = c => c.durum === 'eksik' ? ['eksik ' + c.eksik.map(k => k === 'gogus' ? 'göğüs' : 'but').join('+'), 'red'] : c.durum === 'stdYok' ? ['standart yok', 'grey'] : c.durum === 'fazla' ? ['fire', 'orange'] : c.durum === 'yuksek' ? ['fazla et', 'green'] : ['normal', 'green'];
+  const G5 = 'grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,0.9fr)) minmax(0,1.15fr)';
+  const G4 = 'grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr))';
+  const GM = 'grid-template-columns:minmax(0,1.7fr) repeat(3,minmax(0,0.85fr))';
+  const BS = 'min-height:max(44px, calc(52px * var(--s) * var(--v)));padding:0 10px;font-size:calc(17px * var(--s))';
+  const farkTL = (c, p, f) => (p === 'kanat' ? c.fark.kanat * s.kanatSatis : c.fark[p] * f);
+  const partRow = (label, c, p, f) => (c.cik[p] > 0 || c.std[p] > 0 ? html`<div class="tr4" style=${G5 + TR}><span>${label}</span><span>${kg(c.cik[p])}</span><span class="muted">${c.stdOk ? kg(c.std[p]) : '—'}</span><span style=${'color:' + (c.stdOk ? kzColor(c.fark[p]) : '#475569')}>${c.stdOk ? sgn(c.fark[p], kg) : '—'}</span><span style=${'color:' + (c.stdOk ? kzColor(c.fark[p]) : '#475569')}>${c.stdOk && !c.eksik.length ? stl(farkTL(c, p, f)) : '—'}</span></div>` : '');
   const allNames = pf ? [...new Set([...names, ...pf.isciler])] : [];
-  const kalanTxt = m => { const g = geldi[m.id] || 0, i = islendi[m.id] || 0; return !m.is ? 'marinasyona hazır' : g - i > 0.05 ? kg(g - i) + ' kg bekliyor' : i - g > 0.05 ? kg(i - g) + ' kg önceki günden' : 'hepsi işlendi'; };
+  const kalanCell = m => { const g = geldi[m.id] || 0, i = islendi[m.id] || 0; return !m.is ? '—' : stok[m.id] > 0.05 ? kg(stok[m.id]) : g || i ? '0 · bitti' : '0'; };
+  const stokTurler = MAL.filter(m => geldi[m.id] || islendi[m.id] || (m.is && stok[m.id] > 0.05));
+  const ozet = isciView ? ayOzet() : null;
+  const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const ayAd = AY[Number(day.slice(5, 7)) - 1] + ' ' + day.slice(0, 4);
+  const sm = 'font-size:calc(16px * var(--s));font-weight:700;opacity:.85;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   return html`<div class="wrap">
-    <${Top} title="Mal & İşçi" sub=${fd(day) + ' · gelen ' + kg(gelenKg) + ' kg · işçi ödemesi ' + tl(r2(T.odeme))} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); }}/>`}/>
+    <${Top} title="Mal & İşçi" sub=${fd(day) + ' · gelen ' + kg(gelenKg) + ' kg · işçi ödemesi ' + tl(r2(T.odeme))} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setConfirmDel(null); setSel(null); setMf(null); setPf(null); setRen(null); }}/>`}/>
     ${exampleBanner(s)}
     <div class="two">
       <div class="side">
     <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-      <div class="stat"><small>Gelen mal</small><b>${kg(gelenKg)} kg</b></div>
-      <div class="stat"><small>İşlenen</small><b>${kg(T.gir)} kg</b></div>
-      <div class="stat"><small>Et / standart</small><b style=${'color:' + (fireT == null ? '#475569' : fireT < -s.fireEsik ? '#9A3412' : '#0F766E')}>${fireT == null ? '—' : sgn(fireT, pct) + '%'}</b></div>
-      <div class="stat"><small>İşçi ödemesi</small><b>${tl(r2(T.odeme))}</b></div>
+      <div class="stat"><small>Gelen mal</small><b style="font-size:calc(24px * var(--s))">${kg(gelenKg)} kg</b></div>
+      <div class="stat"><small>İşlenen</small><b style="font-size:calc(24px * var(--s))">${kg(T.gir)} kg</b></div>
+      <div class="stat"><small>Et / standart</small><b style=${'font-size:calc(24px * var(--s));color:' + (fireT == null ? '#475569' : fireT < -s.fireEsik ? '#9A3412' : '#0F766E')}>${fireT == null ? '—' : sgn(fireT, pct) + '%'}</b></div>
+      <div class="stat"><small>İşçi ödemesi</small><b style="font-size:calc(24px * var(--s))">${tlR(T.odeme)}</b>${T.prim > 0 ? html`<small style="font-size:calc(15px * var(--s))">+ prim ${tlR(T.prim)}</small>` : ''}</div>
     </div>
 
     <h2 style="margin-top:4px">Gelen mal</h2>
-    ${gelis.length ? html`${gelis.map(x => html`<div class="mv">
-        <span style="min-width:0;flex:1"><b>${x.saat ? x.saat + ' · ' : ''}${malAd(x.tur)}</b><small>${kgA(x.kg)} kg × ${tl(x.fiyat)} = ${tl(r2(x.kg * x.fiyat))}</small></span>
-        <button type="button" class="del-x" aria-label="Mal girişini sil" onClick=${() => del('mal', x.id, 'Mal girişi silindi')}>${confirmDel === 'mal' + x.id ? 'Emin misin?' : 'Sil'}</button></div>`)}
-      <div class="tbl">${MAL.filter(m => geldi[m.id] || islendi[m.id]).map(m => html`<div class="tr4" style="grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr)) minmax(0,1.4fr)"><span>${m.ad}</span><span>${kg(geldi[m.id] || 0)} kg</span><span>${m.is ? kg(islendi[m.id] || 0) + ' kg' : '—'}</span><span class="muted" style="font-size:calc(17px * var(--s))">${kalanTxt(m)}</span></div>`)}</div>`
+    ${gelis.length ? gelis.map(x => { const on = !!selMal && selMal.id === x.id; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick({ k: 'mal', id: x.id })}>
+        <span style="min-width:0;flex:1"><span style="display:block">${x.saat ? x.saat + ' · ' : ''}${malAd(x.tur)}</span><span style=${sm}>${kgA(x.kg)} kg × ${tl(x.fiyat)} = ${tl(r2(x.kg * x.fiyat))}</span></span></button>`; })
       : html`<div class="card"><div class="lbl">Bu gün mal girişi yok. Her geliş ayrı kaydedilir: mal türü, kilo ve kilo fiyatı.</div></div>`}
+    ${stokTurler.length ? html`<div class="tbl">
+      <div class="tr4 head" style=${G4 + ';padding:8px 10px'}><span>Stok</span><span>Geldi</span><span>İşlendi</span><span>Kalan</span></div>
+      ${stokTurler.map(m => html`<div class="tr4" style=${G4 + ';padding:8px 10px;font-size:calc(17px * var(--s))'}><span>${m.ad}</span><span>${kg(geldi[m.id] || 0)}</span><span>${m.is ? kg(islendi[m.id] || 0) : '—'}</span><span style=${'font-weight:800;color:' + (m.is && stok[m.id] > 0.05 ? '#0F172A' : '#475569')}>${kalanCell(m)}</span></div>`)}
+    </div>` : ''}
 
     <h2 style="margin-top:4px">İş partileri</h2>
-    ${partis.length ? partis.map(p => { const c = p.calc; const [dt, dc, db] = durumTag(c); return html`<div class="card" style="gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="font-size:calc(24px * var(--s));font-weight:800">${c.gir.map(g => malAd(g.tur) + ' ' + kg(g.kg) + ' kg').join(' + ')}${p.eski ? html`<span class="pcs">eski kayıt</span>` : ''}</div>
-        <span class="tag" style=${'color:' + dc + ';background:' + db + ';border-color:' + dc}>${dt}</span>
-      </div>
-      <div class="tr3 head"><span>Çıkan</span><span>kg</span><span>Standart</span><span>Fark</span></div>
-      ${partRow('Kanat', c, 'kanat')}${partRow('Göğüs eti', c, 'gogus')}${partRow('But eti', c, 'but')}
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        <span style="font-size:calc(26px * var(--s));font-weight:800">Ödeme: ${tl(c.odeme)}</span>
-        <span class="muted" style="font-size:calc(17px * var(--s));font-weight:700">${c.elle ? (p.eski ? 'eski hesap' : 'paylar elle girildi · hesaplanan ' + tl(c.odemeHesap)) : c.isciler.length > 1 ? c.isciler.length + ' kişiye eşit bölündü' : ''}</span>
-      </div>
-      <div class="chips">${c.isciler.map(n => html`<span class="tag" style="background:#F1F5F9;color:#0F172A;border-color:#94A3B8">${n} · ${tl(c.paylar[n])}</span>`)}</div>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        ${p.eski ? '' : html`<button type="button" class="btn ghost small" onClick=${() => openParti(p)}>Düzelt</button>`}
-        <button type="button" class="del-x" style="height:max(44px, calc(60px * var(--s)))" onClick=${() => del(p.eski ? 'kesim' : 'parti', p.id, 'İş partisi silindi')}>${confirmDel === (p.eski ? 'kesim' : 'parti') + p.id ? 'Emin misin?' : 'Sil'}</button>
-      </div></div>`; })
+    ${partis.length ? partis.map(p => { const c = p.calc; const on = !!selParti && selParti.id === p.id; const [pt, pc] = durumPill(c); const e = partiEtTL(c, pfy(c).val); return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick({ k: 'parti', id: p.id })}>
+        <span style="min-width:0;flex:1"><span style="display:block">${c.gir.map(g => malAd(g.tur) + ' ' + kg(g.kg) + ' kg').join(' + ')}</span><span style=${sm}>${c.isciler.join(', ')}</span>${e != null ? html`<span style=${sm + (on ? '' : ';opacity:1;color:' + kzColor(c.etFark))}>et ${sgn(c.etFark, kg)} kg · ${stl(e)}</span>` : ''}</span>
+        <span class=${'pill ' + pc}>${pt}</span></button>`; })
       : html`<div class="card"><div class="lbl">Bu gün iş partisi yok. Parti: hangi mal işlendi, ne çıktı, kimler çalıştı. Fire ve ödeme otomatik hesaplanır, ödeme çalışanlara bölünür.</div></div>`}
+
+    <button type="button" class=${'row pick' + (isciView ? ' on' : '')} aria-pressed=${isciView} style="margin-top:4px" onClick=${() => pick({ k: 'isci' })}>
+      <span style="min-width:0;flex:1"><span style="display:block">İşçiler</span><span style=${sm}>${aktif.length} kişi · ${ayAd} özeti, prim, gelmedi</span></span></button>
       </div>
       <div class="main card">
         <div class="g2">
-          <button type="button" class=${'btn small ' + (mf ? '' : 'ghost')} aria-pressed=${!!mf} onClick=${openMal}>+ Mal geldi</button>
-          <button type="button" class=${'btn small ' + (pf && !pf.id ? 'orange' : 'ghost')} aria-pressed=${!!pf} onClick=${() => openParti(null)}>+ İş partisi</button>
+          <button type="button" class=${'btn small ' + (mf && !mf.id ? '' : 'ghost')} aria-pressed=${!!mf && !mf.id} onClick=${() => openMal(null)}>+ Mal geldi</button>
+          <button type="button" class=${'btn small ' + (pf && !pf.id ? 'orange' : 'ghost')} aria-pressed=${!!pf && !pf.id} onClick=${() => openParti(null)}>+ İş partisi</button>
         </div>
-        ${!mf && !pf ? html`<div class="lbl">Yeni giriş için üstteki düğmelere dokun. Soldaki bir partiyi "Düzelt" ile burada açabilirsin.</div>` : ''}
     ${mf ? html`<div style="display:contents">
-      <h2>Mal geldi · ${fd(day)}</h2>
-      <div class="g2">${MAL.map(m => html`<button type="button" class=${'btn small ' + (mf.tur === m.id ? '' : 'ghost')} aria-pressed=${mf.tur === m.id} onClick=${() => setMf(f => ({ ...f, tur: m.id, fiyat: priceStr(m.id) }))}>${m.ad}</button>`)}</div>
+      <h2>${mf.id ? 'Mal girişini düzelt' : 'Mal geldi'} · ${fd(mf.date || day)}</h2>
+      <div class="g2">${MAL.map(m => html`<button type="button" class=${'btn small ' + (mf.tur === m.id ? '' : 'ghost')} aria-pressed=${mf.tur === m.id} onClick=${() => setMf(f => ({ ...f, tur: m.id, fiyat: f.id ? f.fiyat : priceStr(m.id) }))}>${m.ad}</button>`)}</div>
       <div class="fgrid">
         <${Fld} label="Kilo" unit="kg" value=${mf.kg} set=${v => MF('kg', v)}/>
         <${Fld} label="Kilo fiyatı (KDV hariç)" unit="₺/kg" value=${mf.fiyat} set=${v => MF('fiyat', v)}/>
         <label class="fld"><span class="lbl">Saat</span><input class="big" type="time" value=${mf.saat} onInput=${e => MF('saat', e.target.value)}/></label>
+        ${mf.id ? html`<label class="fld"><span class="lbl">Tarih</span><input class="big" type="date" max=${today()} value=${mf.date} onInput=${e => MF('date', e.target.value)}/></label>` : ''}
       </div>
       ${num(mf.kg) > 0 && num(mf.fiyat) > 0 ? html`<div class="lbl">Tutar: ${tl(r2(num(mf.kg) * num(mf.fiyat)))} (KDV hariç)${MAL.find(m => m.id === mf.tur).is ? '' : ' · işçiliksiz, doğrudan marinasyona gider'}</div>` : ''}
+      ${mf.id ? html`<div class="lbl">Düzeltme, bu maldan yapılan partilerin stok ve maliyet hesabını da günceller.</div>` : ''}
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setMf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveMal}>KAYDET</button></div>
-    </div>` : ''}
-    ${pf ? html`<div style="display:contents">
+    </div>` : pf ? html`<div style="display:contents">
       <h2>${pf.id ? 'Partiyi düzelt' : 'İş partisi'} · ${fd(day)}</h2>
-      <div class="lbl">1. İşlenen mal</div>
-      <div class="fgrid">${isT.map(m => html`<${Fld} label=${m.ad} unit="kg" value=${pf.g[m.id]} set=${v => setPf(f => ({ ...f, g: { ...f.g, [m.id]: v } }))}/>`)}</div>
+      <div class="lbl">1. İşlenen mal (stok: bu güne kadar gelen − işlenen)</div>
+      <div class="fgrid">${isT.map(m => html`<${Fld} label=${m.ad} unit="kg" value=${pf.g[m.id]} set=${v => setPf(f => ({ ...f, g: { ...f.g, [m.id]: v } }))} hint=${stokHint(m)}/>`)}</div>
       <div class="lbl">2. Çıkanlar</div>
       <div class="fgrid">
         <${Fld} label="Kanat" unit="kg" value=${pf.kanat} set=${v => PF('kanat', v)} hint=${prev.stdOk && prev.std.kanat > 0 ? 'Standart ' + kg(prev.std.kanat) : ''}/>
         <${Fld} label="Kemiksiz göğüs" unit="kg" value=${pf.gogus} set=${v => PF('gogus', v)} hint=${prev.stdOk && prev.std.gogus > 0 ? 'Standart ' + kg(prev.std.gogus) : ''}/>
         <${Fld} label="Kemiksiz but" unit="kg" value=${pf.but} set=${v => PF('but', v)} hint=${prev.stdOk && prev.std.but > 0 ? 'Standart ' + kg(prev.std.but) : ''}/>
       </div>
-      <div class="lbl">3. Çalışan işçiler (${pf.isciler.length} kişi)</div>
+      <div class="lbl">3. Çalışan işçiler (${pf.isciler.length} kişi)${gelmedi.length ? ' · bugün gelmeyen: ' + gelmedi.join(', ') : ''}</div>
       <div class="chips">${allNames.map(n => html`<button type="button" class=${'btn small ' + (pf.isciler.includes(n) ? 'orange' : 'ghost')} aria-pressed=${pf.isciler.includes(n)} onClick=${() => toggleIsci(n)}>${pf.isciler.includes(n) ? '✓ ' : ''}${n}</button>`)}</div>
       <div style="display:flex;gap:8px;align-items:flex-end">
         <label class="fld" style="flex:1"><span class="lbl" style="font-size:calc(16px * var(--s))">Yeni işçi adı</span><input class="big" value=${pf.yeni} onInput=${e => PF('yeni', e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addIsci(); } }}/></label>
@@ -2061,19 +2213,85 @@ function Mal({ go }) {
       </div>
       <div class="card" style="background:#F1F5F9;gap:4px">
         ${kvRow('Et (göğüs+but) standarda göre', prev.etOran == null ? (prev.gir.length ? 'standart girilmedi' : '—') : sgn(prev.etFark, kg) + ' kg (' + sgn(prev.etOran, pct) + '%)', false, prev.etOran != null && prev.etOran < -s.fireEsik ? '#9A3412' : '#0F766E')}
+        ${prevTL != null ? kvRow('Et farkı ₺ (kemiksiz ' + tl(r2(prevFy.val)) + '/kg)', stl(prevTL), false, kzColor(prevTL)) : ''}
         ${kvRow('Hesaplanan ödeme', tl(prev.odemeHesap), true)}
         ${pf.isciler.length && !pf.elle ? kvRow('Kişi başı (eşit)', pf.isciler.length + ' × ' + tl(prev.paylar[pf.isciler[0]])) : ''}
-        ${pf.elle ? html`${pf.isciler.map(n => html`<${Fld} label=${n + ' payı'} unit="₺" value=${pf.pay[n] || ''} set=${v => setPf(f => ({ ...f, pay: { ...f.pay, [n]: v } }))}/>`)}
-          ${kvRow('Elle toplam', tl(prev.odeme), true, Math.abs(prev.odeme - prev.odemeHesap) > 0.005 ? '#9A3412' : '#0F766E')}` : ''}
+        ${pf.elle ? html`<div style="display:contents">${pf.isciler.map(n => html`<${Fld} label=${n + ' payı'} unit="₺" value=${pf.pay[n] || ''} set=${v => setPf(f => ({ ...f, pay: { ...f.pay, [n]: v } }))}/>`)}
+          ${kvRow('Elle toplam', tl(prev.odeme), true, Math.abs(prev.odeme - prev.odemeHesap) > 0.005 ? '#9A3412' : '#0F766E')}</div>` : ''}
       </div>
       ${pf.isciler.length ? html`<button type="button" class="btn ghost small" aria-pressed=${pf.elle} onClick=${toggleElle}>${pf.elle ? 'Eşit bölüşüme dön' : 'Payları elle gir'}</button>` : ''}
+      ${pf.isciler.length ? html`<div style="display:contents">
+        <div class="lbl">4. Prim (isteğe bağlı, ₺). Kazanç/zarar: et farkı ₺ işçilere eşit bölünür.</div>
+        <div class="fgrid">${pf.isciler.map(n => html`<${Fld} label=${n + ' primi'} unit="₺" value=${(pf.prim || {})[n] || ''} set=${v => setPf(f => ({ ...f, prim: { ...(f.prim || {}), [n]: v } }))} hint=${prevKz[n] != null ? (prevKz[n] >= 0 ? 'Kazandırdı ' : 'Zarar ettirdi ') + tl(Math.abs(prevKz[n])) : ''}/>`)}</div>
+      </div>` : ''}
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setPf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveParti}>KAYDET</button></div>
-    </div>` : ''}
+    </div>` : selMal ? html`<div style="display:contents">
+      <h2>${malAd(selMal.tur)} · ${fd(selMal.date)}</h2>
+      <div>
+        ${kvRow('Saat', selMal.saat || '—')}
+        ${kvRow('Kilo', kgA(selMal.kg) + ' kg')}
+        ${kvRow('Kilo fiyatı (KDV hariç)', tl(selMal.fiyat))}
+        ${kvRow('Tutar (KDV hariç)', tl(r2(selMal.kg * selMal.fiyat)), true)}
+        ${MAL.find(m => m.id === selMal.tur).is ? kvRow(malAd(selMal.tur) + ' stoğu, gün sonu', kg(stok[selMal.tur] || 0) + ' kg') : kvRow('Gidiş', 'işçiliksiz, marinasyona')}
+      </div>
+      <div class="lbl">Bu ekran sadece gösterir. Değiştirmek için "Düzelt".</div>
+      <div class="grid3"><button type="button" class="btn ghost" style="grid-column:span 2" onClick=${() => openMal(selMal)}>Düzelt</button>
+        <button type="button" class="del-x" style="height:auto" onClick=${() => del('mal', selMal.id, 'Mal girişi silindi')}>${confirmDel === 'mal' + selMal.id ? 'Emin misin?' : 'Sil'}</button></div>
+    </div>` : selParti ? (() => { const p = selParti, c = p.calc, [dt, dc, db] = durumTag(c), fy = pfy(c), e = partiEtTL(c, fy.val), kz = e != null ? esitBol(e, c.isciler) : {}, pr = p.primler || {}; return html`<div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:calc(22px * var(--s))">${c.gir.map(g => malAd(g.tur) + ' ' + kg(g.kg) + ' kg').join(' + ')}</h2>
+        <span class="pill" title=${dt} style=${'font-size:calc(15px * var(--s));color:' + dc + ';background:' + db}>${durumPill(c)[0]}${c.etOran != null && c.durum !== 'eksik' ? ' ' + sgn(c.etOran, pct) + '%' : ''}</span>
+      </div>
+      <div>
+        <div class="tr4 head" style=${G5 + TH}><span>Çıkan</span><span>kg</span><span>Standart</span><span>Fark</span><span>Fark ₺</span></div>
+        ${partRow('Kanat', c, 'kanat', fy.val)}${partRow('Göğüs', c, 'gogus', fy.val)}${partRow('But', c, 'but', fy.val)}
+        <div class="tr4" style=${G5 + TR + ';font-weight:800'}><span>Et</span><span>${kg(c.et)}</span><span class="muted">${c.stdOk ? kg(c.etStd) : '—'}</span><span style=${'color:' + kzColor(c.etFark)}>${c.stdOk ? sgn(c.etFark, kg) : '—'}</span><span style=${'color:' + (e != null ? kzColor(e) : '#475569')}>${e != null ? stl(e) : '—'}</span></div>
+      </div>
+      <div>
+        <div class="tr4 head" style=${G4 + TH}><span>İşçi</span><span>Ödeme</span><span>Kazanç</span><span>Prim</span></div>
+        ${c.isciler.map(n => html`<div class="tr4" style=${G4 + TR}><span style="overflow:hidden;text-overflow:ellipsis">${n}</span><span>${tlR(c.paylar[n] || 0)}</span><span style=${'color:' + (kz[n] != null ? kzColor(kz[n]) : '#475569')}>${kz[n] != null ? stl(kz[n]) : '—'}</span><span>${pr[n] ? tlR(pr[n]) : '—'}</span></div>`)}
+      </div>
+      <div class="lbl" style="font-size:calc(15px * var(--s))">Fark ₺: et × kemiksiz ${tl(r2(fy.val))}/kg (${fyTxt(fy)}), kanat × ${tl(s.kanatSatis)}/kg. Ödeme ${tl(c.odeme)}${c.elle ? (p.eski ? ', eski hesap' : ', paylar elle') : c.isciler.length > 1 ? ', kazanç ve ödeme eşit bölünür' : ''}.</div>
+      <div class="grid3">${p.eski ? html`<div class="lbl" style="grid-column:span 2">Eski kayıt (tek işçi): düzeltilemez.</div>` : html`<button type="button" class="btn ghost" style="grid-column:span 2" onClick=${() => openParti(p)}>Düzelt</button>`}
+        <button type="button" class="del-x" style="height:auto" onClick=${() => del(p.eski ? 'kesim' : 'parti', p.id, 'İş partisi silindi')}>${confirmDel === (p.eski ? 'kesim' : 'parti') + p.id ? 'Emin misin?' : 'Sil'}</button></div>
+    </div>`; })() : isciView ? html`<div style="display:contents">
+      <h2>İşçiler · ${ayAd}</h2>
+      ${Object.keys(ozet).length ? html`<div>
+        <div class="tr4 head" style=${G5 + TH}><span>İşçi</span><span>Parti</span><span>Ödeme</span><span>Prim</span><span>Kazanç</span></div>
+        ${Object.entries(ozet).sort((a, b) => b[1].n - a[1].n).map(([n, o]) => html`<div class="tr4" style=${G5 + TR}><span style="overflow:hidden;text-overflow:ellipsis">${n}</span><span>${o.n}</span><span>${tlR(o.odeme)}</span><span>${o.prim ? tlR(o.prim) : '—'}</span><span style=${'color:' + kzColor(o.kz)}>${stl(o.kz)}</span></div>`)}
+      </div>
+      <div class="lbl" style="font-size:calc(15px * var(--s))">1 – ${fd(day)}. Kazanç: Oranlar'daki et oranına göre fazla/eksik et × o günün kemiksiz maliyeti, partideki işçilere eşit. Prim: partide "Düzelt", 4. adım.</div>` : html`<div class="lbl">Bu ay iş partisi yok.</div>`}
+      <h2 style="margin-top:6px">Liste · ${fd(day)}</h2>
+      ${aktif.map(n => ren && ren.ad === n ? html`<div class="mv" style="flex-wrap:wrap">
+          <input class="big" style="flex:1;min-width:160px" value=${ren.yeni} onInput=${e => setRen(r => ({ ...r, yeni: e.target.value }))} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); isciAdDegistir(); } }}/>
+          <button type="button" class="btn small" disabled=${busy} onClick=${isciAdDegistir}>Kaydet</button>
+          <button type="button" class="btn ghost small" onClick=${() => setRen(null)}>Vazgeç</button></div>`
+        : html`<div class="mv" style="padding:6px 8px 6px 12px;gap:6px">
+          <span style="min-width:0;flex:1;overflow:hidden"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</b>${gelmedi.includes(n) ? html`<small style="color:#B91C1C;font-weight:800">gelmedi</small>` : ''}</span>
+          <button type="button" class="btn ghost small" style=${BS} aria-pressed=${gelmedi.includes(n)} onClick=${() => gelmediToggle(n)}>${gelmedi.includes(n) ? 'Geldi' : 'Gelmedi'}</button>
+          <button type="button" class="btn ghost small" style=${BS} aria-label=${n + ' adını düzelt'} onClick=${() => setRen({ ad: n, yeni: n })}>Ad</button>
+          <button type="button" class="del-x" onClick=${() => isciCikar(n)}>Çıkar</button></div>`)}
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <label class="fld" style="flex:1"><span class="lbl" style="font-size:calc(16px * var(--s))">Yeni işçi</span><input class="big" value=${yeniIsci} onInput=${e => setYeniIsci(e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); isciEkle(); } }}/></label>
+        <button type="button" class="btn ghost small" style="min-height:max(44px, calc(72px * var(--s) * var(--v)))" onClick=${isciEkle}>Ekle</button>
+      </div>
+      <div class="lbl" style="font-size:calc(15px * var(--s))">Gelmedi: o gün partide görünmez. Çıkar: listeden kalkar, eski partileri kalır. Ad: eski partilerde de değişir.</div>
+      ${cikarilan.length ? html`<div style="display:contents"><div class="lbl">Listeden çıkarılanlar</div>
+        <div class="chips">${cikarilan.map(n => html`<button type="button" class="btn ghost small" onClick=${() => isciGeriAl(n)}>${n} · geri al</button>`)}</div></div>` : ''}
+    </div>` : html`<div style="display:contents">
+      <h2>Türe göre maliyet · ₺/kg</h2>
+      <div>
+        <div class="tr4 head" style=${GM + TH}><span>Tür</span><span>Alış</span><span>Sossuz</span><span>Soslu</span></div>
+        ${turM.map(t => html`<div class="tr4" style=${GM + TR}><span style="white-space:normal">${t.ad}</span><span class="muted">${t.fiyat != null ? tl(r2(t.fiyat)) : '—'}</span><span>${t.sossuz != null ? tl(r2(t.sossuz)) : '—'}</span><span>${t.soslu != null ? tl(r2(t.soslu)) : '—'}</span></div>`)}
+      </div>
+      <div class="lbl" style="font-size:calc(15px * var(--s))">Alış: son alış, KDV hariç. Sossuz: 1 kg kemiksiz et, KDV${s.iscilikMaliyete ? ' ve işçilik' : ''} dahil, kanat ve kemik geliri düşülmüş (Oranlar ekranındaki oranlarla). Soslu: karışımlı 1 kg marine et. "—": fiyat ya da oran yok. Soldan bir kayda dokun, ayrıntısı burada açılır.</div>
+    </div>`}
       </div>
     </div>
   </div>`;
 }
+
 
 // ---------- Marinasyon ----------
 function Marine({ go }) {
