@@ -1067,7 +1067,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.10 · 21.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.11 · 21.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -2042,7 +2042,10 @@ function Mal({ go }) {
   const [busy, setBusy] = useState(false);
   const data = DATA();
   const s = settingsFor(day);
-  const gelis = (byDate(S.mal)[day] || []).slice().sort((a, b) => String(a.saat || '').localeCompare(String(b.saat || '')) || (a.ts || 0) - (b.ts || 0));
+  const gelis = (byDate(S.mal)[day] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const kdvOf = date => settingsFor(date).kdv || 0;
+  const kdvli = (k, f, date) => r2(k * f * (1 + kdvOf(date))); // KDV dahil toplam
+  const kdvPct = date => String(r2(kdvOf(date) * 100)).replace('.', ',');
   const partis = partiListOn(data, day);
   const geldi = {}, islendi = {};
   gelis.forEach(x => { geldi[x.tur] = (geldi[x.tur] || 0) + x.kg; });
@@ -2087,9 +2090,9 @@ function Mal({ go }) {
   const priceStr = tur => { const f = malPrice(S.mal, tur, day); return f != null ? String(r2(f)).replace('.', ',') : tur === 'butun' ? String(s.tavukFiyat).replace('.', ',') : ''; };
   const openMal = x => {
     setPf(null); setRen(null); setConfirmDel(null);
-    if (x) { setMf({ id: x.id, date: x.date, tur: x.tur, kg: str(x.kg), fiyat: strTL(x.fiyat), saat: x.saat || '' }); return; }
+    if (x) { setMf({ id: x.id, date: x.date, tur: x.tur, kg: str(x.kg), fiyat: strTL(x.fiyat) }); return; }
     setSel(null);
-    const now = new Date(); setMf({ id: null, date: day, tur: 'butun', kg: '', fiyat: priceStr('butun'), saat: day === today() ? pad(now.getHours()) + ':' + pad(now.getMinutes()) : '' });
+    setMf({ id: null, date: day, tur: 'butun', kg: '', fiyat: priceStr('butun') });
   };
   const MF = (k, v) => setMf(f => ({ ...f, [k]: v }));
   const saveMal = async () => {
@@ -2100,7 +2103,7 @@ function Mal({ go }) {
     if (date > today()) { toast('İleri bir tarih seçilemez.'); return; }
     setBusy(true);
     const id = mf.id || genId(); const old = mf.id ? S.mal[mf.id] : null;
-    const rec = { date, saat: mf.saat || '', tur: mf.tur, kg: Math.round(k * 1000) / 1000, fiyat: r2(f), ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
+    const rec = { date, tur: mf.tur, kg: Math.round(k * 1000) / 1000, fiyat: r2(f), ts: (old && old.ts) || Date.now() }; if (old && old.sample) rec.sample = true;
     const msg = !mf.id ? malAd(mf.tur) + ' · ' + kg(k) + ' kg kaydedildi' : date !== day ? 'Mal girişi düzeltildi ve ' + fd(date) + ' gününe taşındı' : 'Mal girişi düzeltildi';
     const ok = await safe(() => put('mal', id, rec), msg);
     if (ok) { setMf(null); setSel(date === day ? { k: 'mal', id } : null); }
@@ -2239,7 +2242,7 @@ function Mal({ go }) {
 
     <h2 style="margin-top:4px">Gelen mal</h2>
     ${gelis.length ? gelis.map(x => { const on = !!selMal && selMal.id === x.id; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick({ k: 'mal', id: x.id })}>
-        <span style="min-width:0;flex:1"><span style="display:block">${x.saat ? x.saat + ' · ' : ''}${malAd(x.tur)}</span><span style=${sm}>${kgA(x.kg)} kg × ${tl(x.fiyat)} = ${tl(r2(x.kg * x.fiyat))}</span></span></button>`; })
+        <span style="min-width:0;flex:1"><span style="display:block">${malAd(x.tur)}</span><span style=${sm}>${kgA(x.kg)} kg · ${tl(kdvli(x.kg, x.fiyat, x.date))} KDV'li</span></span></button>`; })
       : html`<div class="card"><div class="lbl">Bu gün mal girişi yok. Her geliş ayrı kaydedilir: mal türü, kilo ve kilo fiyatı.</div></div>`}
     ${stokTurler.length ? html`<div class="tbl">
       <div class="tr4 head" style=${G4 + ';padding:8px 10px'}><span>Stok</span><span>Geldi</span><span>İşlendi</span><span>Kalan</span></div>
@@ -2266,10 +2269,12 @@ function Mal({ go }) {
       <div class="fgrid">
         <${Fld} label="Kilo" unit="kg" value=${mf.kg} set=${v => MF('kg', v)}/>
         <${Fld} label="Kilo fiyatı (KDV hariç)" unit="₺/kg" value=${mf.fiyat} set=${v => MF('fiyat', v)}/>
-        <label class="fld"><span class="lbl">Saat</span><input class="big" type="time" value=${mf.saat} onInput=${e => MF('saat', e.target.value)}/></label>
         ${mf.id ? html`<label class="fld"><span class="lbl">Tarih</span><input class="big" type="date" max=${today()} value=${mf.date} onInput=${e => MF('date', e.target.value)}/></label>` : ''}
       </div>
-      ${num(mf.kg) > 0 && num(mf.fiyat) > 0 ? html`<div class="lbl">Tutar: ${tl(r2(num(mf.kg) * num(mf.fiyat)))} (KDV hariç)${MAL.find(m => m.id === mf.tur).is ? '' : ' · işçiliksiz, doğrudan marinasyona gider'}</div>` : ''}
+      ${num(mf.kg) > 0 && num(mf.fiyat) > 0 ? html`<div style="display:contents">
+        <div class="lbl">KDV hariç ${tl(r2(num(mf.kg) * num(mf.fiyat)))} + KDV %${kdvPct(mf.date || day)} ${tl(r2(kdvli(num(mf.kg), num(mf.fiyat), mf.date || day) - r2(num(mf.kg) * num(mf.fiyat))))}${MAL.find(m => m.id === mf.tur).is ? '' : ' · işçiliksiz, doğrudan marinasyona gider'}</div>
+        <div class="lbl" style="font-size:calc(22px * var(--s));font-weight:800;color:#C2410C">Toplam (KDV dahil): ${tl(kdvli(num(mf.kg), num(mf.fiyat), mf.date || day))}</div>
+      </div>` : ''}
       ${mf.id ? html`<div class="lbl">Düzeltme, bu maldan yapılan partilerin stok ve maliyet hesabını da günceller.</div>` : ''}
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setMf(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${saveMal}>KAYDET</button></div>
@@ -2307,10 +2312,11 @@ function Mal({ go }) {
     </div>` : selMal ? html`<div style="display:contents">
       <h2>${malAd(selMal.tur)} · ${fd(selMal.date)}</h2>
       <div>
-        ${kvRow('Saat', selMal.saat || '—')}
         ${kvRow('Kilo', kgA(selMal.kg) + ' kg')}
         ${kvRow('Kilo fiyatı (KDV hariç)', tl(selMal.fiyat))}
-        ${kvRow('Tutar (KDV hariç)', tl(r2(selMal.kg * selMal.fiyat)), true)}
+        ${kvRow('Tutar (KDV hariç)', tl(r2(selMal.kg * selMal.fiyat)))}
+        ${kvRow('KDV %' + kdvPct(selMal.date), tl(r2(kdvli(selMal.kg, selMal.fiyat, selMal.date) - r2(selMal.kg * selMal.fiyat))))}
+        ${kvRow('Toplam (KDV dahil)', tl(kdvli(selMal.kg, selMal.fiyat, selMal.date)), true, '#C2410C')}
         ${MAL.find(m => m.id === selMal.tur).is ? kvRow(malAd(selMal.tur) + ' stoğu, gün sonu', kg(stok[selMal.tur] || 0) + ' kg') : kvRow('Gidiş', 'işçiliksiz, marinasyona')}
       </div>
       <div class="lbl">Bu ekran sadece gösterir. Değiştirmek için "Düzelt".</div>
