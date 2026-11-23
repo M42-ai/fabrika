@@ -2396,18 +2396,26 @@ function Marine({ go }) {
   const open = x => {
     setConfirmDel(null);
     const av = cigStokOn(data, day, x ? x.id : null);
-    if (x) { setForm({ id: x.id, av, gogus: str(x.gogus), but: str(x.but), deri: str(x.deri), tartilan: str(x.tartilan) }); return; }
+    if (x) {
+      const eski = x.gogus > 0 && x.but > 0; // eski iki türlü kayıt: iki alan da gösterilir
+      setForm({ id: x.id, av, eski, tur: x.but > 0 && !(x.gogus > 0) ? 'but' : 'gogus', kg: eski ? '' : str(x.gogus || x.but), gogus: str(x.gogus), but: str(x.but), deri: str(x.deri), tartilan: str(x.tartilan) }); return;
+    }
     setSel(null);
-    setForm({ id: null, av, gogus: str(av.gogus), but: str(av.but), deri: '', tartilan: '' });
+    const tur = av.gogus > 0.05 ? 'gogus' : av.but > 0.05 ? 'but' : 'gogus';
+    setForm({ id: null, av, eski: false, tur, kg: str(av[tur]), gogus: '', but: '', deri: '', tartilan: '' });
   };
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setTur = t => setForm(f => ({ ...f, tur: t, kg: str(f.av[t]) }));
+  // Formdaki giren et: tek tür partide seçilen türe yazılır, diğeri 0; eski kayıtta iki alan ayrı ayrı.
+  const girOf = f => (f.eski ? { gogus: num(f.gogus), but: num(f.but) } : { gogus: f.tur === 'gogus' ? num(f.kg) : 0, but: f.tur === 'but' ? num(f.kg) : 0 });
+  const turAd = x => (x.gogus > 0 && x.but > 0 ? 'Göğüs + but' : x.but > 0 ? 'But' : 'Göğüs');
   const old = form && form.id ? S.marine[form.id] : null;
   const artisOf = () => (old && old.artis != null ? old.artis : s.marineArtis);
-  const prev = form ? marineCalc({ gogus: num(form.gogus), but: num(form.but), deri: num(form.deri), artis: artisOf() }, s, m) : null;
+  const prev = form ? marineCalc({ ...girOf(form), deri: num(form.deri), artis: artisOf() }, s, m) : null;
   const prevStd = prev ? prev.cGogus + prev.cBut : 0;
   const prevT = form ? num(form.tartilan) : 0;
   const save = async () => {
-    const r = { date: day, gogus: num(form.gogus), but: num(form.but), deri: num(form.deri), artis: artisOf(), ts: (old && old.ts) || Date.now() };
+    const r = { date: day, ...girOf(form), deri: num(form.deri), artis: artisOf(), ts: (old && old.ts) || Date.now() };
     if (num(form.tartilan) > 0) r.tartilan = Math.round(num(form.tartilan) * 1000) / 1000;
     if (old && old.sample) r.sample = true;
     if (!(r.gogus + r.but + r.deri > 0)) { toast('Kilo gir.'); return; }
@@ -2424,7 +2432,7 @@ function Marine({ go }) {
   const stokHint = (k, a) => { const e = num(form[k]); return e > 0 ? (e - a > 0.05 ? 'Stokta ' + kg(a) + ' kg · stoktan fazla' : 'Stokta ' + kg(a) + ' · kalır ' + kg(a - e) + ' kg') : 'Stokta ' + kg(a) + ' kg'; };
   const sm = 'font-size:calc(16px * var(--s));font-weight:700;opacity:.85;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   return html`<div class="wrap">
-    <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg marine'} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setForm(null); setSel(null); setConfirmDel(null); }}/>`}/>
+    <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg soslu'} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setForm(null); setSel(null); setConfirmDel(null); }}/>`}/>
     ${exampleBanner(s)}
     <div class="two">
       <div class="side">
@@ -2435,21 +2443,25 @@ function Marine({ go }) {
     <div class="lbl" style="font-size:calc(15px * var(--s))">Gün sonu: iş partilerinden çıkan ve kemiksiz gelen et, marinasyona girenler düşülmüş.</div>
     <h2 style="margin-top:4px">Bu günün partileri</h2>
     ${list.length ? list.map(x => { const mc = marineCikan(x, s); const on = x.id === sel; const fk = mc.tartilan != null ? mc.tartilan - mc.std : null; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick(x.id)}>
-        <span style="min-width:0;flex:1"><span style="display:block">${kg((x.gogus || 0) + (x.but || 0))} kg çiğ → ${kg(mc.gogus + mc.but)} kg</span><span style=${sm}>göğüs ${kg(x.gogus || 0)} · but ${kg(x.but || 0)} · deri ${kg(x.deri || 0)}</span>${fk != null ? html`<span style=${sm + (on ? '' : ';opacity:1;color:' + kzColor(fk))}>tartılan ${sgn(fk, kg)} kg · ${stl(fk * mf)}</span>` : ''}</span></button>`; })
+        <span style="min-width:0;flex:1"><span style="display:block">${turAd(x)} · ${kg((x.gogus || 0) + (x.but || 0))} kg sossuz → ${kg(mc.gogus + mc.but)} kg soslu</span><span style=${sm}>${x.gogus > 0 && x.but > 0 ? 'göğüs ' + kg(x.gogus) + ' · but ' + kg(x.but) + ' · ' : ''}deri ${kg(x.deri || 0)} kg</span>${fk != null ? html`<span style=${sm + (on ? '' : ';opacity:1;color:' + kzColor(fk))}>tartılan ${sgn(fk, kg)} kg · ${stl(fk * mf)}</span>` : ''}</span></button>`; })
       : html`<div class="card"><div class="lbl">Bu gün marinasyon yok. Parti girince karışımın kaç kilo olacağı ve hangi malzemeden ne kadar konacağı hesaplanır.</div></div>`}
       </div>
       <div class="main card">
         <button type="button" class=${'btn small ' + (form && !form.id ? '' : 'ghost')} aria-pressed=${!!form && !form.id} onClick=${() => open(null)}>+ Marinasyon partisi</button>
     ${form ? html`<div style="display:contents">
       <h2>${form.id ? 'Marinasyonu düzelt' : 'Marinasyon partisi'} · ${fd(day)}</h2>
+      ${form.eski ? html`<div class="lbl">Eski kayıt: göğüs ve but tek partide girilmiş. Yeni partiler tek tür girilir.</div>` : html`<div class="g2">
+        <button type="button" class=${'btn small ' + (form.tur === 'gogus' ? '' : 'ghost')} aria-pressed=${form.tur === 'gogus'} onClick=${() => setTur('gogus')}>Göğüs</button>
+        <button type="button" class=${'btn small ' + (form.tur === 'but' ? '' : 'ghost')} aria-pressed=${form.tur === 'but'} onClick=${() => setTur('but')}>But</button></div>`}
       <div class="fgrid">
-        <${Fld} label="Giren çiğ göğüs" unit="kg" value=${form.gogus} set=${v => F('gogus', v)} hint=${stokHint('gogus', form.av.gogus)}/>
-        <${Fld} label="Giren çiğ but" unit="kg" value=${form.but} set=${v => F('but', v)} hint=${stokHint('but', form.av.but)}/>
+        ${form.eski ? html`<${Fld} label="Giren sossuz göğüs" unit="kg" value=${form.gogus} set=${v => F('gogus', v)} hint=${stokHint('gogus', form.av.gogus)}/>
+          <${Fld} label="Giren sossuz but" unit="kg" value=${form.but} set=${v => F('but', v)} hint=${stokHint('but', form.av.but)}/>`
+        : html`<${Fld} label="Giren sossuz et" unit="kg" value=${form.kg} set=${v => F('kg', v)} hint=${stokHint('kg', form.av[form.tur])}/>`}
         <${Fld} label="Ayrılan deri" unit="kg" value=${form.deri} set=${v => F('deri', v)}/>
-        <${Fld} label="Tartılan marine (isteğe bağlı)" unit="kg" value=${form.tartilan} set=${v => F('tartilan', v)} hint=${'Standart ' + kg(prevStd) + ' kg (göğüs+but)'}/>
+        <${Fld} label="Tartılan soslu (isteğe bağlı)" unit="kg" value=${form.tartilan} set=${v => F('tartilan', v)} hint=${'Standart ' + kg(prevStd) + ' kg'}/>
       </div>
       <div class="card" style="background:#F1F5F9;gap:4px">
-        ${kvRow('Çıkan marine, standart (artış ' + pct(artisOf()) + '%)', kg(prevStd) + ' kg')}
+        ${kvRow('Çıkan soslu, standart (artış ' + pct(artisOf()) + '%)', kg(prevStd) + ' kg')}
         ${prevT > 0 ? kvRow('Tartılan − standart', sgn(prevT - prevStd, kg) + ' kg · ' + stl((prevT - prevStd) * mf), false, kzColor(prevT - prevStd)) : ''}
         ${kvRow('Harcanması gereken karışım', kg(prev.karisim) + ' kg', true, '#0E7490')}
         <div class="lbl" style="margin-top:6px">Malzemeler</div>
@@ -2460,16 +2472,16 @@ function Marine({ go }) {
     </div>` : cur ? (() => { const c = marineCalc(cur, s, m), mc = marineCikan(cur, s), fk = mc.tartilan != null ? mc.tartilan - mc.std : null; return html`<div style="display:flex;flex-direction:column;gap:6px">
       <h2 style="margin:0;font-size:calc(22px * var(--s))">Marinasyon · ${fd(day)}</h2>
       <div>
-        ${kvRow('Giren göğüs + but', kg(cur.gogus || 0) + ' + ' + kg(cur.but || 0) + ' kg')}
+        ${kvRow('Giren sossuz ' + turAd(cur).toLowerCase(), (cur.gogus > 0 && cur.but > 0 ? kg(cur.gogus) + ' + ' + kg(cur.but) : kg((cur.gogus || 0) + (cur.but || 0))) + ' kg')}
         ${kvRow('Ayrılan deri', kg(cur.deri || 0) + ' kg')}
-        ${kvRow(fk != null ? 'Marine: standart / tartılan' : 'Çıkan marine, standart', kg(mc.std) + (fk != null ? ' / ' + kg(mc.tartilan) : '') + ' kg')}
+        ${kvRow(fk != null ? 'Soslu: standart / tartılan' : 'Çıkan soslu, standart', kg(mc.std) + (fk != null ? ' / ' + kg(mc.tartilan) : '') + ' kg')}
         ${fk != null ? kvRow('Fark', sgn(fk, kg) + ' kg · ' + stl(fk * mf), true, kzColor(fk)) : ''}
         ${kvRow('Karışım', kg(c.karisim) + ' kg', true, '#0E7490')}
       </div>
       <div class="lbl" style="font-size:calc(15px * var(--s))">Malzemeler: ${c.malzeme.filter(x => x.kg > 0).map(x => x.ad + ' ' + kg(x.kg) + ' kg').join(' · ') || '—'}. ${fk != null ? 'Fark ₺ = fark kg × marine maliyeti ' + tl(r2(mf)) + '/kg; terazi tartılanı kullanır.' : 'Tartılmadı; terazi standart artışı kullanır.'}</div>
       <div class="grid3"><button type="button" class="btn ghost" style="grid-column:span 2" onClick=${() => open(cur)}>Düzelt</button>
         <button type="button" class="del-x" style="height:auto" onClick=${() => del(cur)}>${confirmDel === cur.id ? 'Emin misin?' : 'Sil'}</button></div>
-    </div>`; })() : html`<div class="lbl">"+ Marinasyon partisi" ile giren çiğ et ve deriyi yaz; karışım ve malzemeler hesaplanır. Çiğ et stoktan düşer. Soldaki bir partiye dokun, ayrıntısı burada açılır.</div>`}
+    </div>`; })() : html`<div class="lbl">"+ Marinasyon partisi" ile türü seç (göğüs ya da but), giren sossuz eti ve deriyi yaz; karışım ve malzemeler hesaplanır. Sossuz et stoktan düşer. Soldaki bir partiye dokun, ayrıntısı burada açılır.</div>`}
       </div>
     </div>
   </div>`;
