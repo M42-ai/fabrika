@@ -2250,7 +2250,7 @@ function Mal({ go }) {
       <div class="tr4 head" style=${G4 + ';padding:8px 10px'}><span>Stok</span><span>Geldi</span><span>İşlendi</span><span>Kalan</span></div>
       ${stokTurler.map(m => html`<div class="tr4" style=${G4 + ';padding:8px 10px;font-size:calc(17px * var(--s))'}><span>${m.ad}</span><span>${kg(geldi[m.id] || 0)}</span><span>${m.is ? kg(islendi[m.id] || 0) : '—'}</span><span style=${'font-weight:800;color:' + (m.is && stok[m.id] > 0.05 ? '#0F172A' : '#475569')}>${kalanCell(m)}</span></div>`)}
     </div>` : ''}
-    <div class="lbl" style="font-size:calc(15px * var(--s))">Geldi: "Mal geldi" ile yazılan. İşlendi: iş partilerine yazılan kilo. Kalan: geldi − işlendi, yarına stok olarak geçer. İşlemediğin kiloyu partiye yazma, kendiliğinden kalır.</div>
+    <div class="lbl" style="font-size:calc(15px * var(--s))">Geldi: "Mal geldi" ile yazılan. İşlendi: iş partilerine yazılan kilo. Kalan: önceki günlerden kalan + geldi − işlendi, yarına stok olarak geçer. İşlemediğin kiloyu partiye yazma, kendiliğinden kalır.</div>
 
     <h2 style="margin-top:4px">İş partileri</h2>
     ${partis.length ? partis.map(p => { const c = p.calc; const on = !!selParti && selParti.id === p.id; const [pt, pc] = durumPill(c); const e = partiEtTL(c, pfy(c).val); return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick({ k: 'parti', id: p.id })}>
