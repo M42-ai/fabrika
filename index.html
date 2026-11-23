@@ -2388,6 +2388,7 @@ function Marine({ go }) {
   const s = settingsFor(day); const m = costModel(s);
   const list = (byDate(S.marine)[day] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
   const stok = cigStokOn(data, day);
+  const tz = teraziOn(day).kalan; // soslu stok: Terazi'nin gün sonu kalanı (sayım varsa sayım)
   const mf = marineKgFiyat(data, day);
   const str = v => (v > 0.0005 ? String(Math.round(v * 1000) / 1000).replace('.', ',') : '');
   const stl = v => sgn(Math.round(v), x => tl(Math.round(x)));
@@ -2437,10 +2438,12 @@ function Marine({ go }) {
     <div class="two">
       <div class="side">
     <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-      <div class="stat"><small>Çiğ göğüs stoğu</small><b style="font-size:calc(24px * var(--s))">${kg(stok.gogus)} kg</b></div>
-      <div class="stat"><small>Çiğ but stoğu</small><b style="font-size:calc(24px * var(--s))">${kg(stok.but)} kg</b></div>
+      <div class="stat"><small>Sossuz göğüs</small><b style="font-size:calc(24px * var(--s))">${kg(stok.gogus)} kg</b></div>
+      <div class="stat"><small>Sossuz but</small><b style="font-size:calc(24px * var(--s))">${kg(stok.but)} kg</b></div>
+      <div class="stat"><small>Soslu göğüs</small><b style="font-size:calc(24px * var(--s))">${kg(tz.gogus)} kg</b></div>
+      <div class="stat"><small>Soslu but</small><b style="font-size:calc(24px * var(--s))">${kg(tz.but)} kg</b></div>
     </div>
-    <div class="lbl" style="font-size:calc(15px * var(--s))">Gün sonu: iş partilerinden çıkan ve kemiksiz gelen et, marinasyona girenler düşülmüş.</div>
+    <div class="lbl" style="font-size:calc(15px * var(--s))">Gün sonu stokları. Sossuz: iş partilerinden çıkan ve kemiksiz gelen et, marinasyona girenler düşülmüş. Soslu: Terazi'deki olması gereken (sayım girildiyse sayım).</div>
     <h2 style="margin-top:4px">Bu günün partileri</h2>
     ${list.length ? list.map(x => { const mc = marineCikan(x, s); const on = x.id === sel; const fk = mc.tartilan != null ? mc.tartilan - mc.std : null; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick(x.id)}>
         <span style="min-width:0;flex:1"><span style="display:block">${turAd(x)} · ${kg((x.gogus || 0) + (x.but || 0))} kg sossuz → ${kg(mc.gogus + mc.but)} kg soslu</span><span style=${sm}>${x.gogus > 0 && x.but > 0 ? 'göğüs ' + kg(x.gogus) + ' · but ' + kg(x.but) + ' · ' : ''}deri ${kg(x.deri || 0)} kg</span>${fk != null ? html`<span style=${sm + (on ? '' : ';opacity:1;color:' + kzColor(fk))}>tartılan ${sgn(fk, kg)} kg · ${stl(fk * mf)}</span>` : ''}</span></button>`; })
@@ -2466,6 +2469,8 @@ function Marine({ go }) {
         ${kvRow('Harcanması gereken karışım', kg(prev.karisim) + ' kg', true, '#0E7490')}
         <div class="lbl" style="margin-top:6px">Malzemeler</div>
         ${prev.malzeme.filter(x => x.kg > 0).map(x => kvRow(x.ad, kg(x.kg) + ' kg'))}
+        <div class="lbl" style="font-size:calc(15px * var(--s));margin-top:6px">Malzemeler Oranlar & Fiyatlar'daki tarife göre: et × karışım oranı ${pct(m.karisimOran)}%. Tarif yanlışsa oradan düzelt.</div>
+        <button type="button" class="btn ghost small" onClick=${() => go('oranlar')}>Tarifi düzelt</button>
       </div>
       <div class="grid3"><button type="button" class="btn ghost" onClick=${() => setForm(null)}>Vazgeç</button>
         <button type="button" class="btn" style="grid-column:span 2" disabled=${busy} onClick=${save}>KAYDET</button></div>
@@ -2478,7 +2483,7 @@ function Marine({ go }) {
         ${fk != null ? kvRow('Fark', sgn(fk, kg) + ' kg · ' + stl(fk * mf), true, kzColor(fk)) : ''}
         ${kvRow('Karışım', kg(c.karisim) + ' kg', true, '#0E7490')}
       </div>
-      <div class="lbl" style="font-size:calc(15px * var(--s))">Malzemeler: ${c.malzeme.filter(x => x.kg > 0).map(x => x.ad + ' ' + kg(x.kg) + ' kg').join(' · ') || '—'}. ${fk != null ? 'Fark ₺ = fark kg × marine maliyeti ' + tl(r2(mf)) + '/kg; terazi tartılanı kullanır.' : 'Tartılmadı; terazi standart artışı kullanır.'}</div>
+      <div class="lbl" style="font-size:calc(15px * var(--s))">Malzemeler (tarif: Oranlar & Fiyatlar): ${c.malzeme.filter(x => x.kg > 0).map(x => x.ad + ' ' + kg(x.kg) + ' kg').join(' · ') || '—'}. ${fk != null ? 'Fark ₺ = fark kg × marine maliyeti ' + tl(r2(mf)) + '/kg; terazi tartılanı kullanır.' : 'Tartılmadı; terazi standart artışı kullanır.'}</div>
       <div class="grid3"><button type="button" class="btn ghost" style="grid-column:span 2" onClick=${() => open(cur)}>Düzelt</button>
         <button type="button" class="del-x" style="height:auto" onClick=${() => del(cur)}>${confirmDel === cur.id ? 'Emin misin?' : 'Sil'}</button></div>
     </div>`; })() : html`<div class="lbl">"+ Marinasyon partisi" ile türü seç (göğüs ya da but), giren sossuz eti ve deriyi yaz; karışım ve malzemeler hesaplanır. Sossuz et stoktan düşer. Soldaki bir partiye dokun, ayrıntısı burada açılır.</div>`}
