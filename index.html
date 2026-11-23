@@ -1067,7 +1067,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.11 · 21.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.12 · 23.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -2322,8 +2322,8 @@ function Mal({ go }) {
         ${kvRow('Toplam (KDV dahil)', tl(kdvli(selMal.kg, selMal.fiyat, selMal.date)), true, '#C2410C')}
         ${MAL.find(m => m.id === selMal.tur).is ? html`<div style="display:contents">
           ${kvRow('Bu gün gelen − işlenen', kg(geldi[selMal.tur] || 0) + ' − ' + kg(islendi[selMal.tur] || 0) + ' kg')}
-          ${kvRow(malAd(selMal.tur) + ' gün sonu stoğu', kg(stok[selMal.tur] || 0) + ' kg → yarına geçer', true)}
-          <div class="lbl" style="font-size:calc(15px * var(--s))">Stok önceki günlerden kalanı da içerir. İşlenen kilo iş partilerinden gelir; kalanı ayrıca yazmana gerek yok.</div>
+          ${kvRow('Gün sonu stoğu', kg(stok[selMal.tur] || 0) + ' kg', true)}
+          <div class="lbl" style="font-size:calc(15px * var(--s))">Gün sonu stoğu yarına geçer; önceki günlerden kalanı da içerir. İşlenen kilo iş partilerinden gelir; kalanı ayrıca yazmana gerek yok.</div>
         </div>` : kvRow('Gidiş', 'işçiliksiz, marinasyona')}
       </div>
       <div class="lbl">Bu ekran sadece gösterir. Değiştirmek için "Düzelt".</div>
