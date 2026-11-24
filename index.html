@@ -858,8 +858,8 @@ function sampleDocs() {
     m04: mv('B1', 'odeme', { amount: 5000, payType: 'Nakit' }, 4),
     m05: mv('B12', 'odeme', { amount: 3000, payType: 'Havale / EFT' }, 5)
   };
-  const ml = (date, saat, tur, kgv, fiyat, i) => ({ date, saat, tur, kg: kgv, fiyat, ts: now - 70000 + i * 1000, sample: true });
-  const mal = { g1: ml(y, '07:40', 'butun', 500, 80, 1), g2: ml(t, '07:30', 'butun', 500, 80, 2), g3: ml(t, '11:15', 'kemikliBut', 120, 95, 3), g4: ml(t, '13:00', 'kemiksizGogus', 60, 185, 4) };
+  const ml = (date, tur, kgv, fiyat, i) => ({ date, tur, kg: kgv, fiyat, ts: now - 70000 + i * 1000, sample: true });
+  const mal = { g1: ml(y, 'butun', 500, 80, 1), g2: ml(t, 'butun', 500, 80, 2), g3: ml(t, 'kemikliBut', 120, 95, 3), g4: ml(t, 'kemiksizGogus', 60, 185, 4) };
   const pt = (date, girdiler, cikan, isciler, i) => ({ date, girdiler, cikan, isciler, ts: now - 50000 + i * 1000, sample: true });
   const parti = {
     p1: pt(y, [{ tur: 'butun', kg: 500 }], { kanat: 50, gogus: 211, but: 139 }, ['Ali'], 1),
@@ -1067,7 +1067,7 @@ function Ana({ go }) {
       ${hasSample ? html`<button type="button" class="btn orange" onClick=${async () => { if (!confirmSample) { setConfirmSample(true); return; } setSettings(false); await clearSample(); }}>${confirmSample ? 'Emin misin? Örnek kayıtlar silinecek' : 'Örnek verileri sil'}</button>` : dbEmpty() ? html`<button type="button" class="btn ghost" onClick=${async () => { setSettings(false); await loadSample(); }}>Örnek verileri yükle</button>` : ''}
       ${S.mode === 'live' ? html`<button type="button" class="btn ghost" onClick=${() => { setSettings(false); logout(); }}>Çıkış yap</button>` : ''}
       ${DENEME ? html`<a class="btn ghost" href=${location.pathname}>Denemeden çık</a>` : ''}
-      <div class="lbl" style="text-align:center">Sürüm 3.12 · 23.11.2026 · ${location.host}</div>
+      <div class="lbl" style="text-align:center">Sürüm 3.13 · 24.11.2026 · ${location.host}</div>
       <button type="button" class="btn ghost" onClick=${() => setSettings(false)}>Kapat</button>
     <//>` : ''}
   </div>`;
@@ -1265,8 +1265,8 @@ function Kontrol({ go }) {
   const D = { tam: ['Tam ✓', '#134E4A', '#F0FDFA', '#0F766E'], eksik: ['Eksik', '#9A3412', '#FFF7ED', '#C2410C'], fazla: ['Fazla', '#1E3A8A', '#DBEAFE', '#1D4ED8'], yapilmadi: ['Yapılmadı', '#FFFFFF', '#C2410C', '#C2410C'], siparissiz: ['Siparişsiz döner', '#FFFFFF', '#6D28D9', '#6D28D9'] };
   const detay = r => r.durum === 'yapilmadi' ? r.sip.adet + ' döner · ' + kg(r.sip.total) + ' kg bekleniyor'
     : r.durum === 'siparissiz' ? r.adet + ' döner · ' + kg(r.kg) + ' kg siparişte yok'
-    : r.durum === 'eksik' ? (r.adetFark < 0 ? (-r.adetFark) + ' döner eksik · ' + kg(-r.kgFark) + ' kg' : kg(-r.kgFark) + ' kg eksik')
-    : r.durum === 'fazla' ? (r.adetFark > 0 ? r.adetFark + ' döner fazla · +' + kg(r.kgFark) + ' kg' : '+' + kg(r.kgFark) + ' kg fazla')
+    : r.durum === 'eksik' ? (r.adetFark < 0 ? (-r.adetFark) + ' döner eksik · ' + sgn(r.kgFark, kg) + ' kg' : kg(-r.kgFark) + ' kg eksik')
+    : r.durum === 'fazla' ? (r.adetFark > 0 ? r.adetFark + ' döner fazla · ' + sgn(r.kgFark, kg) + ' kg' : '+' + kg(r.kgFark) + ' kg fazla')
     : 'fark ' + sgn(r.kgFark, kg) + ' kg';
   const sipKg = r1(sd.rows.reduce((a, r) => a + (r.sip ? r.sip.total : 0), 0)), sipAdet = sd.rows.reduce((a, r) => a + (r.sip ? r.sip.adet : 0), 0);
   const yapKg = r1(sd.rows.reduce((a, r) => a + r.kg, 0)), yapAdet = sd.rows.reduce((a, r) => a + r.adet, 0);
@@ -2239,17 +2239,17 @@ function Mal({ go }) {
       <div class="stat"><small>Gelen mal</small><b style="font-size:calc(24px * var(--s))">${kg(gelenKg)} kg</b></div>
       <div class="stat"><small>İşlenen</small><b style="font-size:calc(24px * var(--s))">${kg(T.gir)} kg</b></div>
       <div class="stat"><small>Et / standart</small><b style=${'font-size:calc(24px * var(--s));color:' + (fireT == null ? '#475569' : fireT < -s.fireEsik ? '#9A3412' : '#0F766E')}>${fireT == null ? '—' : sgn(fireT, pct) + '%'}</b></div>
-      <div class="stat"><small>İşçi ödemesi</small><b style="font-size:calc(24px * var(--s))">${tlR(T.odeme)}</b>${T.prim > 0 ? html`<small style="font-size:calc(15px * var(--s))">+ prim ${tlR(T.prim)}</small>` : ''}</div>
+      <div class="stat"><small>İşçi ödemesi</small><b style="font-size:calc(24px * var(--s))">${tl(r2(T.odeme))}</b>${T.prim > 0 ? html`<small style="font-size:calc(15px * var(--s))">+ prim ${tlR(T.prim)}</small>` : ''}</div>
     </div>
 
     <h2 style="margin-top:4px">Gelen mal</h2>
     ${gelis.length ? gelis.map(x => { const on = !!selMal && selMal.id === x.id; return html`<button type="button" class=${'row pick' + (on ? ' on' : '')} aria-pressed=${on} onClick=${() => pick({ k: 'mal', id: x.id })}>
         <span style="min-width:0;flex:1"><span style="display:block">${malAd(x.tur)}</span><span style=${sm}>${kgA(x.kg)} kg · ${tl(kdvli(x.kg, x.fiyat, x.date))} KDV'li</span></span></button>`; })
       : html`<div class="card"><div class="lbl">Bu gün mal girişi yok. Her geliş ayrı kaydedilir: mal türü, kilo ve kilo fiyatı.</div></div>`}
-    ${stokTurler.length ? html`<div class="tbl">
-      <div class="tr4 head" style=${G4 + ';padding:8px 10px'}><span>Stok</span><span>Geldi</span><span>İşlendi</span><span>Kalan</span></div>
+    ${stokTurler.length ? html`<div style="display:contents"><div class="tbl">
+      <div class="tr4 head" style=${G4 + ';padding:8px 10px'}><span>Mal</span><span>Geldi</span><span>İşlendi</span><span>Kalan</span></div>
       ${stokTurler.map(m => html`<div class="tr4" style=${G4 + ';padding:8px 10px;font-size:calc(17px * var(--s))'}><span>${m.ad}</span><span>${kg(geldi[m.id] || 0)}</span><span>${m.is ? kg(islendi[m.id] || 0) : '—'}</span><span style=${'font-weight:800;color:' + (m.is && stok[m.id] > 0.05 ? '#0F172A' : '#475569')}>${kalanCell(m)}</span></div>`)}
-    </div>` : ''}
+    </div></div>` : ''}
     <div class="lbl" style="font-size:calc(15px * var(--s))">Geldi: "Mal geldi" ile yazılan. İşlendi: iş partilerine yazılan kilo. Kalan: önceki günlerden kalan + geldi − işlendi, yarına stok olarak geçer. İşlemediğin kiloyu partiye yazma, kendiliğinden kalır.</div>
 
     <h2 style="margin-top:4px">İş partileri</h2>
@@ -2435,12 +2435,12 @@ function Marine({ go }) {
   };
   const del = async x => { if (confirmDel !== x.id) { setConfirmDel(x.id); return; } setConfirmDel(null); const ok = await safe(() => removeDoc('marine', x.id), 'Marinasyon silindi'); if (ok) setSel(null); };
   const pick = id => { setSel(id); setForm(null); setConfirmDel(null); toMain(); };
-  const totals = list.reduce((a, x) => { const c = marineCalc(x, s, m); const mc = marineCikan(x, s); return { toplam: a.toplam + mc.gogus + mc.but + c.deri, karisim: a.karisim + c.karisim, gir: a.gir + (x.gogus || 0) + (x.but || 0) }; }, { toplam: 0, karisim: 0, gir: 0 });
+  const totals = list.reduce((a, x) => { const c = marineCalc(x, s, m); const mc = marineCikan(x, s); return { toplam: a.toplam + mc.gogus + mc.but, deri: a.deri + c.deri, karisim: a.karisim + c.karisim, gir: a.gir + (x.gogus || 0) + (x.but || 0) }; }, { toplam: 0, deri: 0, karisim: 0, gir: 0 });
   const cur = sel ? list.find(x => x.id === sel) : null;
   const stokHint = (k, a) => { const e = num(form[k]); return e > 0 ? (e - a > 0.05 ? 'Stokta ' + kg(a) + ' kg · stoktan fazla' : 'Stokta ' + kg(a) + ' · kalır ' + kg(a - e) + ' kg') : 'Stokta ' + kg(a) + ' kg'; };
   const sm = 'font-size:calc(16px * var(--s));font-weight:700;opacity:.85;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   return html`<div class="wrap">
-    <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg soslu'} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setForm(null); setSel(null); setConfirmDel(null); }}/>`}/>
+    <${Top} title="Marinasyon" sub=${fd(day) + ' · ' + kg(totals.toplam) + ' kg soslu' + (totals.deri > 0 ? ' · ' + kg(totals.deri) + ' kg deri' : '')} go=${go} right=${html`<${DayNav} day=${day} setDay=${d => { setDay(d); setForm(null); setSel(null); setConfirmDel(null); }}/>`}/>
     ${exampleBanner(s)}
     <div class="two">
       <div class="side">
@@ -2529,24 +2529,26 @@ function Sayim({ go }) {
   const fkTL = fk ? (fk.gogus + fk.but) * mf + fk.deri * s.deriMaliyet : null;
   const stl = v => sgn(Math.round(v), x => tl(Math.round(x)));
   const kzColor = v => (v < -0.005 ? '#B91C1C' : v > 0.005 ? '#15803D' : '#475569');
-  const line = (label, o, opts = {}) => html`<div class="tr4 ${opts.strong ? 'strong' : ''}"><span>${label}</span><span>${kg(o.gogus)}</span><span>${kg(o.but)}</span><span>${kg(o.deri)}</span><span>${kg(tot(o))}</span></div>`;
+  // Yan sütun 400 px: 5 sütunlu tablo ancak küçük yazı ve dar boşlukla sığar (1.250,6 gibi sayılar üst üste binmesin)
+  const TT = 'grid-template-columns:minmax(0,1.1fr) repeat(4,minmax(0,1fr));gap:4px;padding:8px 8px;font-size:calc(16px * var(--s))';
+  const line = (label, o, opts = {}) => html`<div class="tr4 ${opts.strong ? 'strong' : ''}" style=${TT + (opts.strong ? ';font-size:calc(18px * var(--s))' : '')}><span>${label}</span><span>${kg(o.gogus)}</span><span>${kg(o.but)}</span><span>${kg(o.deri)}</span><span>${kg(tot(o))}</span></div>`;
   const durum = { denk: ['DENK ✓', '#134E4A', '#F0FDFA'], eksik: ['ET EKSİK: kayıp / çalıntı kontrol et', '#9A3412', '#FFF7ED'], fazla: ['ET FAZLA: dönerler eksik gramajlı olabilir', '#1E3A8A', '#DBEAFE'], sayimYok: ['Sayım girilmedi, fark hesaplanamaz', '#334155', '#F1F5F9'], acilis: ['Açılış devri günü: sayım başlangıç kabul edildi', '#334155', '#F1F5F9'] }[r.durum];
   return html`<div class="wrap">
     <${Top} title="Gün Sonu Terazisi" sub=${fd(day) + ' · marine et dengesi'} go=${go} back="hesaplar" right=${html`<${DayNav} day=${day} setDay=${(d) => { setDay(d); setF(null); }}/>`}/>
     <div class="two">
       <div class="side w400">
     <div class="tbl" style="font-size:calc(19px * var(--s))">
-      <div class="tr4 head"><span></span><span>Göğüs</span><span>But</span><span>Deri</span><span>Toplam</span></div>
+      <div class="tr4 head" style=${TT + ';font-size:calc(14px * var(--s))'}><span></span><span>Göğüs</span><span>But</span><span>Deri</span><span>Toplam</span></div>
       ${line('Devir (dünden)', r.devir)}
       ${line('+ Bugün marine', r.plus)}
       ${line('− Dönerde kullanılan', r.used)}
       ${line('Olması gereken', r.hesap, { strong: true })}
       ${r.say ? line('Sayım', r.say) : ''}
-      ${fk ? html`<div class="tr4" style=${'color:' + kzColor(tot(fk))}><span>Fark</span><span>${sgn(fk.gogus, kg)}</span><span>${sgn(fk.but, kg)}</span><span>${sgn(fk.deri, kg)}</span><span>${sgn(tot(fk), kg)}</span></div>` : ''}
+      ${fk ? html`<div class="tr4" style=${TT + ';color:' + kzColor(tot(fk))}><span>Fark</span><span>${sgn(fk.gogus, kg)}</span><span>${sgn(fk.but, kg)}</span><span>${sgn(fk.deri, kg)}</span><span>${sgn(tot(fk), kg)}</span></div>` : ''}
     </div>
     <div class="banner" style=${'font-size:calc(24px * var(--s));color:' + durum[1] + ';background:' + durum[2] + ';border-color:' + durum[1]}>${durum[0]}${r.say && r.fark != null ? ' · fark ' + sgn(r.fark, kg) + ' kg' + (fkTL != null ? ' · ' + stl(fkTL) : '') + ' (tolerans ' + kg(s.tolerans) + ' kg)' : ''}</div>
     ${fkTL != null ? html`<div class="lbl" style="font-size:calc(15px * var(--s))">Fark ₺: göğüs ve but farkı × o günün marine et maliyeti ${tl(r2(mf))}/kg, deri farkı × deri maliyeti ${tl(s.deriMaliyet)}/kg.</div>` : ''}
-    <div class="lbl">Dönerde kullanılan: bugün üretilen ${r.used.adet} döner (${kg(r.used.kg)} kg) × her müşterinin oranı.</div>
+    <div class="lbl">Dönerde kullanılan: ${day === today() ? 'bugün' : 'o gün'} üretilen ${r.used.adet} döner (${kg(r.used.kg)} kg) × her müşterinin oranı.</div>
       </div>
       <div class="main card">
       ${firstDay ? html`<div style="display:contents"><h2>Açılış devri</h2><div class="lbl">İlk gün: dünden elde kalan marine eti gir. Sonraki günlerde devir kendiliğinden gelir.</div>
@@ -2630,12 +2632,12 @@ function Rapor({ go }) {
     const maliyet = m ? sumBy(ds, x => x.kg * customerKgCost(donerOran(x, S.customers), m, s)) : 0;
     const sd = siparisDurum(S.siparis[d], S.doners, S.customers, d, s.siparisTol);
     const r = series[d];
-    return { d, gir, odeme, fire: std > 0 ? (et - std) / std : null, adet: ds.length, kg: sumBy(ds, x => x.kg), sip: sd.hasOrder ? siparisOzetText(sd) : '', sipBad: sd.hasOrder && (sd.ozet.yapilmadi + sd.ozet.eksik + sd.ozet.fazla + sd.ozet.siparissiz) > 0, fark: r && r.say && r.fark != null ? r.fark : null, maliyet };
+    return { d, gir, odeme, fire: std > 0 ? (et - std) / std : null, esik: s.fireEsik, adet: ds.length, kg: sumBy(ds, x => x.kg), sip: sd.hasOrder ? siparisOzetText(sd) : '', sipBad: sd.hasOrder && (sd.ozet.yapilmadi + sd.ozet.eksik + sd.ozet.fazla + sd.ozet.siparissiz) > 0, fark: r && r.say && r.fark != null ? r.fark : null, maliyet };
   }).filter(r => r.gir || r.adet || r.fark != null || r.sip);
   const T = rows.reduce((a, r) => ({ gir: a.gir + r.gir, odeme: a.odeme + r.odeme, adet: a.adet + r.adet, kg: a.kg + r.kg, fark: a.fark + (r.fark || 0), maliyet: a.maliyet + r.maliyet }), { gir: 0, odeme: 0, adet: 0, kg: 0, fark: 0, maliyet: 0 });
   const wl = Object.entries(workers).sort((a, b) => b[1].kazanc - a[1].kazanc);
   const sNow = settingsFor(today());
-  const fireCol = f => f == null ? '#475569' : f < -sNow.fireEsik ? '#9A3412' : f > sNow.fireEsik ? '#1E3A8A' : '#0F766E';
+  const fireCol = (f, e = sNow.fireEsik) => f == null ? '#475569' : f < -e ? '#9A3412' : f > e ? '#1E3A8A' : '#0F766E';
   const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const shiftM = n => { const dt = new Date(y, mo - 1 + n, 1); return dt.getFullYear() + '-' + pad(dt.getMonth() + 1); };
   return html`<div class="wrap">
@@ -2656,7 +2658,7 @@ function Rapor({ go }) {
     <h2 style="margin-top:4px">Günler</h2>
     ${rows.length ? html`<div class="tbl"><div class="tr6 head"><span>Gün</span><span>Mal kg</span><span>Fire</span><span>Döner</span><span>Terazi</span><span>Maliyet</span></div>
       ${rows.slice().reverse().map(r => html`<div class="tr6"><span><b>${r.d.slice(8, 10)}.${r.d.slice(5, 7)}</b></span><span>${kg(r.gir)}</span>
-        <span style=${'color:' + fireCol(r.fire)}>${r.fire == null ? '—' : sgn(r.fire, pct) + '%'}</span>
+        <span style=${'color:' + fireCol(r.fire, r.esik)}>${r.fire == null ? '—' : sgn(r.fire, pct) + '%'}</span>
         <span>${r.adet} · ${kg(r.kg)}${r.sip ? html`<small class="pcs" style=${'color:' + (r.sipBad ? '#9A3412' : '#0F766E')}>${r.sip}</small>` : ''}</span>
         <span style=${'color:' + (r.fark == null ? '#475569' : r.fark < 0 ? '#9A3412' : '#0F766E')}>${r.fark == null ? 'sayım yok' : sgn(r.fark, kg)}</span><span>${tl(Math.round(r.maliyet))}</span></div>`)}</div>`
       : html`<div class="card"><h2>Bu ay kayıt yok</h2></div>`}
@@ -2824,7 +2826,7 @@ function Tedarik({ go }) {
     ${flist.map(n => html`<button type="button" class=${'row pick' + (n === firma ? ' on' : '')} aria-pressed=${n === firma} onClick=${() => { setFirma(n); setF(null); setSel(null); setRen(null); setConfirmDel(null); }}>${n}${gizli.includes(n) ? html`<span class="pill grey">listede değil</span>` : ''}</button>`)}
       <span style="display:flex;gap:6px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni firma adı" placeholder="Yeni firma adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
       <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setFirma(yeni.trim()); setYeni(''); setSel(null); setF(null); } }}>Ekle</button></span>
-    <div class="stat" style="background:#FFF7ED;outline:2px solid #FDBA74"><small style="color:#7C2D12">${firma} firmasına borcumuz (tüm alımlar − ödemeler)</small><b style="color:#C2410C;font-size:calc(40px * var(--s))">${tl(ot.bakiye)}</b></div>
+    <div class="stat" style=${ot.bakiye < -0.005 ? 'background:#F0FDFA;outline:2px solid #5EEAD4' : 'background:#FFF7ED;outline:2px solid #FDBA74'}><small style=${'color:' + (ot.bakiye < -0.005 ? '#134E4A' : '#7C2D12')}>${ot.bakiye < -0.005 ? firma + ' firmasından alacağımız (fazla ödeme)' : firma + ' firmasına borcumuz (tüm alımlar − ödemeler)'}</small><b style=${'font-size:calc(40px * var(--s));color:' + (ot.bakiye < -0.005 ? '#0F766E' : '#C2410C')}>${tl(Math.abs(ot.bakiye))}</b></div>
     ${ren ? html`<div style="display:flex;gap:6px;flex-wrap:wrap"><input class="big" style="flex:1;min-width:140px;height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Firmanın yeni adı" value=${ren.yeni} onInput=${e => setRen(r => ({ ...r, yeni: e.target.value }))}/>
         <button type="button" class="btn small" disabled=${busy} onClick=${adDegistir}>Kaydet</button><button type="button" class="btn ghost small" onClick=${() => setRen(null)}>Vazgeç</button></div>`
       : html`<div class="grid2"><button type="button" class="btn ghost small" onClick=${() => setRen({ ad: firma, yeni: firma })}>Adını düzelt</button>
@@ -2953,7 +2955,7 @@ function Sahsi({ go }) {
     ${klist.map(n => html`<button type="button" class=${'row pick' + (n === kisi ? ' on' : '')} aria-pressed=${n === kisi} onClick=${() => { setKisi(n); setLim(30); setF(null); setSel(null); setRen(null); setConfirmDel(null); }}>${n}${gizli.includes(n) ? html`<span class="pill grey">listede değil</span>` : ''}</button>`)}
       <span style="display:flex;gap:6px"><input class="big" style="height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Yeni kişi adı" placeholder="Yeni kişi adı" value=${yeni} onInput=${e => setYeni(e.target.value)}/>
       <button type="button" class="btn ghost small" onClick=${() => { if (yeni.trim()) { setKisi(yeni.trim()); setYeni(''); setSel(null); setF(null); } }}>Ekle</button></span>
-    ${kisi ? html`<div class="stat" style=${bak >= 0 ? 'background:#FFF7ED;outline:2px solid #FDBA74' : 'background:#F0FDFA;outline:2px solid #5EEAD4'}><small>${bak >= 0 ? kisi + ' bize borçlu' : 'Biz ' + kisi + ' kişisine borçluyuz'}</small><b style=${'font-size:calc(44px * var(--s));color:' + (bak >= 0 ? '#C2410C' : '#0F766E')}>${tl(Math.abs(bak))}</b></div>` : ''}
+    ${kisi ? html`<div class="stat" style=${bak > 0.005 ? 'background:#FFF7ED;outline:2px solid #FDBA74' : bak < -0.005 ? 'background:#F0FDFA;outline:2px solid #5EEAD4' : ''}><small>${bak > 0.005 ? kisi + ' bize borçlu' : bak < -0.005 ? 'Biz ' + kisi + ' kişisine borçluyuz' : kisi + ' · Borcu yok'}</small><b style=${'font-size:calc(44px * var(--s));color:' + (bak > 0.005 ? '#C2410C' : bak < -0.005 ? '#0F766E' : '#475569')}>${tl(Math.abs(bak))}</b></div>` : ''}
     ${kisi && tumKisiler.includes(kisi) ? (ren ? html`<div style="display:flex;gap:6px;flex-wrap:wrap"><input class="big" style="flex:1;min-width:140px;height:max(44px, calc(60px * var(--s)));font-size:calc(20px * var(--s))" aria-label="Kişinin yeni adı" value=${ren.yeni} onInput=${e => setRen(r => ({ ...r, yeni: e.target.value }))}/>
         <button type="button" class="btn small" disabled=${busy} onClick=${adDegistir}>Kaydet</button><button type="button" class="btn ghost small" onClick=${() => setRen(null)}>Vazgeç</button></div>`
       : html`<div class="grid2"><button type="button" class="btn ghost small" onClick=${() => setRen({ ad: kisi, yeni: kisi })}>Adını düzelt</button>
